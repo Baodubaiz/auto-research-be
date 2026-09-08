@@ -1,0 +1,448 @@
+// ===================================================
+// AUTORESEARCHING - FULL SYSTEM DATABASE SCHEMA
+// ===================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------
+// 0. ENUM DEFINITIONS
+// ---------------------------------------------------
+
+enum JobStatus {
+  pending
+  processing
+  finished
+  error
+  suspended
+
+  @@map("job_status")
+}
+
+enum ModuleType {
+  document_setup
+  write_report
+  chatbot
+  enhancement
+
+  @@map("module_type")
+}
+
+enum DocStatus {
+  draft
+  processing
+  completed
+
+  @@map("doc_status")
+}
+
+enum ReferenceDownloadStatus {
+  pending
+  downloaded
+  failed
+
+  @@map("reference_download_status")
+}
+
+enum FileProcessingStatus {
+  uploaded
+  processing
+  embedded
+  error
+
+  @@map("file_processing_status")
+}
+
+enum AnalysisMode {
+  Auto
+  Interactive
+  Manual
+
+  @@map("analysis_mode")
+}
+
+enum VariableType {
+  Numeric
+  Categorical
+  String
+  Boolean
+  DateTime
+
+  @@map("variable_type")
+}
+
+enum VariableRole {
+  Dependent
+  Independent
+  Control
+  Moderator
+  Mediator
+
+  @@map("variable_role")
+}
+
+enum SlideStatus {
+  generating
+  completed
+  error
+
+  @@map("slide_status")
+}
+
+enum ChatMode {
+  outer_chatbot
+  inner_chatbot
+  writer_chatbot
+
+  @@map("chat_mode")
+}
+
+enum ChatSender {
+  user
+  assistant
+
+  @@map("chat_sender")
+}
+
+enum EnhancementType {
+  rewrite
+  improve_clarity
+  fix_grammar
+  make_academic
+  shorten
+  expand
+  translate
+
+  @@map("enhancement_type")
+}
+
+enum SuggestionStatus {
+  pending
+  applied
+  dismissed
+
+  @@map("suggestion_status")
+}
+
+// ---------------------------------------------------
+// 1. SYSTEM CORE & USER MANAGEMENT
+// ---------------------------------------------------
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  userName  String   @unique @map("user_name")
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  documents    Document[]
+  chatSessions ChatSession[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------
+// 2. MODULE DOCUMENT SETUP
+// ---------------------------------------------------
+
+model Document {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  title              String?
+  field              String?
+  documentType       String?   @map("document_type")
+  language           String?
+  domains            Json?
+  subdomains         Json?
+  numberOfDomains    Int?      @map("number_of_domains")
+  numberOfSubdomains Int?      @map("number_of_subdomains")
+  webSearchEnabled   Boolean?  @map("web_search_enabled")
+  researchType       String?   @map("research_type")
+  status             DocStatus @default(draft)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proposals             Proposal[]
+  keywords              DocumentKeyword[]
+  documentReferences    DocumentReference[]
+  userUploadedDocuments UserUploadedDocument[]
+  outline               Outline?
+  report                Report?
+  datasets              Dataset[]
+  proposedMethods       ProposedMethod[]
+  generatedSlides       GeneratedSlide[]
+  chatSessions          ChatSession[]
+  enhancementSessions   EnhancementSession[]
+  jobs                  Job[]
+
+  @@map("documents")
+}
+
+model Proposal {
+  id               String   @id @default(uuid())
+  documentId       String   @map("document_id")
+  title            String
+  problemStatement String?  @map("problem_statement") @db.Text
+  motivation       String?  @db.Text
+  isSelected       Boolean  @default(false) @map("is_selected")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("proposals")
+}
+
+model DocumentKeyword {
+  id             String   @id @default(uuid())
+  documentId     String   @map("document_id")
+  keywordsMain   Json?    @map("keywords_main")
+  keywordsSub    Json?    @map("keywords_sub")
+  searchQuery    String?  @map("search_query") @db.Text
+  country        String?
+  yearFrom       Int?     @map("year_from")
+  yearTo         Int?     @map("year_to")
+  onlyOpenAccess Boolean  @default(false) @map("only_open_access")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_keywords")
+}
+
+model Reference {
+  id               String                  @id @default(uuid())
+  title            String                  @db.Text
+  authors          String?                 @db.Text
+  journal          String?
+  year             Int?
+  openAccess       Boolean                 @default(false) @map("open_access")
+  downloadedStatus ReferenceDownloadStatus @default(pending) @map("downloaded_status")
+  url              String?                 @db.Text
+  abstract         String?                 @db.Text
+  createdAt        DateTime                @default(now()) @map("created_at")
+
+  documentReferences DocumentReference[]
+
+  @@map("references")
+}
+
+model DocumentReference {
+  documentId  String @map("document_id")
+  referenceId String @map("reference_id")
+
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reference Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, referenceId])
+  @@map("document_references")
+}
+
+model UserUploadedDocument {
+  id               String               @id @default(uuid())
+  documentId       String               @map("document_id")
+  fileName         String               @map("file_name")
+  title            String?
+  processingStatus FileProcessingStatus @default(uploaded) @map("processing_status")
+  isEmbedded       Boolean              @default(false) @map("is_embedded")
+  createdAt        DateTime             @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("user_uploaded_documents")
+}
+
+model Outline {
+  id             String   @id @default(uuid())
+  documentId     String   @unique @map("document_id")
+  totalWordCount Int      @default(0) @map("total_word_count")
+  structure      Json
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("outlines")
+}
+
+// ---------------------------------------------------
+// 3. MODULE WRITE REPORT & DATA ANALYSIS
+// ---------------------------------------------------
+
+model Report {
+  id              String   @id @default(uuid())
+  documentId      String   @unique @map("document_id")
+  contentMarkdown String?  @map("content_markdown") @db.Text
+  version         Int      @default(1)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model Dataset {
+  id              String       @id @default(uuid())
+  documentId      String       @map("document_id")
+  fileName        String?      @map("file_name")
+  filePath        String?      @map("file_path") @db.Text
+  rawData         Json?        @map("raw_data")
+  analysisMode    AnalysisMode @default(Auto) @map("analysis_mode")
+  feedback        String?      @db.Text
+  analysisResults Json?        @map("analysis_results")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  document  Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  variables DatasetVariable[]
+
+  @@map("datasets")
+}
+
+model DatasetVariable {
+  id               String        @id @default(uuid())
+  datasetId        String        @map("dataset_id")
+  variableName     String        @map("variable_name")
+  variableCode     String?       @map("variable_code")
+  variableType     VariableType? @map("variable_type")
+  variableRole     VariableRole? @map("variable_role")
+  scale            String?
+  unit             String?
+  collectionMethod String?       @map("collection_method")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@map("dataset_variables")
+}
+
+model ProposedMethod {
+  id               String   @id @default(uuid())
+  documentId       String   @map("document_id")
+  userRequirements String?  @map("user_requirements") @db.Text
+  researchModel    Json?    @map("research_model")
+  hypotheses       Json?
+  variables        Json?
+  surveyQuestions  Json?    @map("survey_questions")
+  isAccepted       Boolean  @default(false) @map("is_accepted")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("proposed_methods")
+}
+
+model GeneratedSlide {
+  id           String      @id @default(uuid())
+  documentId   String      @map("document_id")
+  slideStyle   String?     @map("slide_style")
+  manualMode   Boolean     @default(false) @map("manual_mode")
+  language     String?
+  pptxUrl      String?     @map("pptx_url") @db.Text
+  status       SlideStatus @default(generating)
+  progressStep String?     @map("progress_step")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("generated_slides")
+}
+
+// ---------------------------------------------------
+// 4. MODULE CHATBOT
+// ---------------------------------------------------
+
+model ChatSession {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  documentId String?  @map("document_id")
+  mode       ChatMode
+  title      String   @default("New Chat")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document?     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  jobs     Job[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String     @id @default(uuid())
+  sessionId String     @map("session_id")
+  sender    ChatSender
+  message   String     @db.Text
+  metadata  Json?
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+// ---------------------------------------------------
+// 5. MODULE ENHANCEMENT
+// ---------------------------------------------------
+
+model EnhancementSession {
+  id              String           @id @default(uuid())
+  documentId      String           @map("document_id")
+  selectedText    String           @map("selected_text") @db.Text
+  contextText     String?          @map("context_text") @db.Text
+  userPrompt      String?          @map("user_prompt") @db.Text
+  enhancementType EnhancementType? @map("enhancement_type")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  document    Document                @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  suggestions EnhancementSuggestion[]
+
+  @@map("enhancement_sessions")
+}
+
+model EnhancementSuggestion {
+  id            String           @id @default(uuid())
+  sessionId     String           @map("session_id")
+  suggestedText String           @map("suggested_text") @db.Text
+  explanation   String?          @db.Text
+  status        SuggestionStatus @default(pending)
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  session EnhancementSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("enhancement_suggestions")
+}
+
+// ---------------------------------------------------
+// 6. JOBS
+// ---------------------------------------------------
+
+model Job {
+  id           String     @id @default(uuid())
+  module       ModuleType
+  action       String
+  documentId   String?    @map("document_id")
+  sessionId    String?    @map("session_id")
+  status       JobStatus  @default(pending)
+  resumeStep   String?    @map("resume_step")
+  payload      Json?
+  result       Json?
+  errorCode    String?    @map("error_code")
+  errorMessage String?    @map("error_message") @db.Text
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  document Document?    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("jobs")
+}
