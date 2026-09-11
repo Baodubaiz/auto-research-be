@@ -13,6 +13,7 @@ export default registerAs('kafka', () => {
     brokers,
     clientId: process.env.KAFKA_CLIENT_ID || 'autoresearch-backend',
     groupId: process.env.KAFKA_GROUP_ID || 'autoresearch-group',
+    ssl: process.env.KAFKA_SSL === 'true',
     topics: {
       documentSetup: {
         request: `document_setup_request${suffix}`,

@@ -366,6 +366,9 @@ model ChatSession {
   documentId String?  @map("document_id")
   mode       ChatMode
   title      String   @default("New Chat")
+  language   String?
+  model      String?
+  webSearchEnabled Boolean? @map("web_search_enabled")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 

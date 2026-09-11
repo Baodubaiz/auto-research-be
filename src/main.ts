@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
@@ -11,8 +12,17 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 3001);
   const apiPrefix = configService.get<string>('app.apiPrefix', 'api/v1');
+  const corsOrigins = configService.get<string[]>('app.corsOrigins', [
+    'http://localhost:3000',
+  ]);
+  const bodyLimit = configService.get<string>('app.bodyLimit', '10mb');
 
-  app.enableCors();
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+  });
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
   app.setGlobalPrefix(apiPrefix);
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,6 +31,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.enableShutdownHooks();
 
   await app.listen(port);
   logger.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
