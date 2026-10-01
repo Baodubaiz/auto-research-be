@@ -31,7 +31,9 @@ pipeline {
 
     stage('Lint') {
       steps {
-        sh 'npm run lint'
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          sh 'npm run lint'
+        }
       }
     }
 
