@@ -6,6 +6,7 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
+    skipDefaultCheckout(true)
   }
 
   environment {
@@ -19,7 +20,16 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
+        timeout(time: 30, unit: 'MINUTES') {
+          checkout([
+            $class: 'GitSCM',
+            branches: scm.branches,
+            userRemoteConfigs: scm.userRemoteConfigs,
+            extensions: [
+              [$class: 'CloneOption', shallow: true, depth: 1, noTags: true, timeout: 30]
+            ]
+          ])
+        }
       }
     }
 
