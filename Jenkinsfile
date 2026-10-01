@@ -62,9 +62,9 @@ pipeline {
 
     stage('Deploy Container') {
       when {
-        anyOf {
-          branch 'main'
-          branch 'setup_cicd'
+        expression {
+          return env.BRANCH_NAME in ['main', 'setup_cicd'] ||
+            env.GIT_BRANCH in ['origin/main', 'origin/setup_cicd', 'main', 'setup_cicd']
         }
       }
       steps {
