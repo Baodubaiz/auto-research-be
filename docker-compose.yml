@@ -1,0 +1,41 @@
+services:
+  auto-research-postgres:
+    image: postgres:17-alpine
+    container_name: auto-research-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: autoresearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - auto_research_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d autoresearch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auto-research-be:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: auto-research-be:local
+    container_name: auto-research-be
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      IS_LOCAL: "false"
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@auto-research-postgres:5432/autoresearch?schema=public
+    ports:
+      - "3001:3001"
+    depends_on:
+      auto-research-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  auto_research_postgres_data:
