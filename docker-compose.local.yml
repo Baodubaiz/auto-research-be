@@ -1,7 +1,7 @@
 services:
   auto-research-postgres:
     image: postgres:17-alpine
-    container_name: auto-research-postgres
+    container_name: auto-research-postgres-local
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - auto_research_postgres_data:/var/lib/postgresql/data
+      - auto_research_postgres_local_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d autoresearch"]
       interval: 5s
@@ -38,4 +38,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  auto_research_postgres_data:
+  auto_research_postgres_local_data:
