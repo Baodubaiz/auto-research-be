@@ -1,0 +1,36 @@
+services:
+  auto-research-postgres:
+    image: postgres:17-alpine
+    container_name: auto-research-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-autoresearch}
+    volumes:
+      - auto_research_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-autoresearch}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auto-research-be:
+    image: ${IMAGE_NAME:-auto-research-be}:${BUILD_NUMBER:-latest}
+    container_name: auto-research-be
+    env_file:
+      - ${ENV_FILE_PATH:-.env.production}
+    environment:
+      NODE_ENV: production
+      IS_LOCAL: "false"
+      PORT: ${CONTAINER_PORT:-3001}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@auto-research-postgres:5432/${POSTGRES_DB:-autoresearch}?schema=public
+    ports:
+      - "${HOST_PORT:-3001}:${CONTAINER_PORT:-3001}"
+    depends_on:
+      auto-research-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  auto_research_postgres_data:
