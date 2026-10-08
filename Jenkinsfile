@@ -104,6 +104,8 @@ pipeline {
               --env-file .env.production \
               down --remove-orphans || true
 
+            docker rm -f ${CONTAINER_NAME}-local 2>/dev/null || true
+
             port_users="$(docker ps --filter "publish=${HOST_PORT}" --format '{{.Names}} {{.Ports}}' || true)"
             if [ -n "${port_users}" ]; then
               echo "Port ${HOST_PORT} is already allocated by:"
