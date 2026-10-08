@@ -84,6 +84,9 @@ pipeline {
             chmod 600 .env.production
             trap 'rm -f .env.production' EXIT
 
+            echo "Loaded environment keys from Jenkins credential:"
+            sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env.production | sort
+
             missing_env=0
             for required_var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
               if ! grep -Eq "^${required_var}=.+" .env.production; then
@@ -95,7 +98,19 @@ pipeline {
               exit 1
             fi
 
-            docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
+            docker compose \
+              -p ${APP_NAME} \
+              -f ${COMPOSE_FILE} \
+              --env-file .env.production \
+              down --remove-orphans || true
+
+            port_users="$(docker ps --filter "publish=${HOST_PORT}" --format '{{.Names}} {{.Ports}}' || true)"
+            if [ -n "${port_users}" ]; then
+              echo "Port ${HOST_PORT} is already allocated by:"
+              echo "${port_users}"
+              exit 1
+            fi
+
             docker compose \
               -p ${APP_NAME} \
               -f ${COMPOSE_FILE} \
