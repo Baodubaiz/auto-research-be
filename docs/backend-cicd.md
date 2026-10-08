@@ -70,6 +70,12 @@ File: backend .env file
 
 Do not commit `.env` to Git.
 
+For production Compose deployments, create the environment file from the example and replace every placeholder secret:
+
+```cmd
+copy .env.production.example .env.production
+```
+
 ## Jenkins Jobs
 
 Review job for `dev`:
@@ -123,7 +129,12 @@ origin/main
 Start PostgreSQL and backend together:
 
 ```cmd
-docker compose up -d --build
+copy docker-compose.local.example.yml docker-compose.local.yml
+copy .env.example .env
+```
+
+```cmd
+make up
 ```
 
 The backend service uses the Compose service name for the database:
@@ -159,3 +170,5 @@ http://localhost:3001/api/v1
 - `oxlint` is pinned to `1.58.0` because newer versions crashed in the Jenkins Docker agent with `Bus error (core dumped)`.
 - The current project has `prisma/schema.prisma`, but no committed Prisma migrations or seed script.
 - `.env` is ignored by Git and must be managed through Jenkins credentials.
+- `docker-compose.local.yml` is ignored by Git. Commit changes to `docker-compose.local.example.yml` when the team needs shared local Compose defaults.
+- `docker-compose.prod.yml` requires `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` from `.env.production` or the server environment.
