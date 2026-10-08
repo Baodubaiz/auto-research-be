@@ -84,6 +84,17 @@ pipeline {
             chmod 600 .env.production
             trap 'rm -f .env.production' EXIT
 
+            missing_env=0
+            for required_var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
+              if ! grep -Eq "^${required_var}=.+" .env.production; then
+                echo "Missing required variable in Jenkins credential auto-research-be-env: ${required_var}"
+                missing_env=1
+              fi
+            done
+            if [ "${missing_env}" -ne 0 ]; then
+              exit 1
+            fi
+
             docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
             docker compose \
               -p ${APP_NAME} \
