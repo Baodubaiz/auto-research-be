@@ -85,7 +85,7 @@ pipeline {
             trap 'rm -f .env.production' EXIT
 
             echo "Loaded environment keys from Jenkins credential:"
-            sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env.production | sort
+            awk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print $1}' .env.production | sort
 
             missing_env=0
             for required_var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
