@@ -76,6 +76,14 @@ For production Compose deployments, create the environment file from the example
 copy .env.production.example .env.production
 ```
 
+The Jenkins secret file must include these production database variables:
+
+```env
+POSTGRES_USER=autoresearch
+POSTGRES_PASSWORD=<strong-production-password>
+POSTGRES_DB=autoresearch
+```
+
 ## Jenkins Jobs
 
 Review job for `dev`:
