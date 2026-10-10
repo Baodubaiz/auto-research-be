@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps build db-push tunnel prod-build prod-up prod-down prod-restart prod-logs prod-ps
+.PHONY: help up down restart restart-be logs ps build db-push db-push-host sh prod-build prod-up prod-down prod-restart prod-logs prod-ps
 
 APP_PORT ?= 3001
 API_PREFIX ?= api/v1
@@ -14,23 +14,25 @@ ENV_FILE_PATH ?= .env.production
 help:
 	@echo "Available commands:"
 	@echo ""
-	@echo "Local/dev:"
-	@echo "  make up       - Build and start PostgreSQL + backend with Docker Compose"
-	@echo "  make down     - Stop Docker Compose services"
-	@echo "  make restart  - Restart all Docker Compose services"
-	@echo "  make logs     - Follow backend logs"
-	@echo "  make ps       - Show running Compose services"
-	@echo "  make build    - Build the backend Docker image"
-	@echo "  make db-push  - Push Prisma schema to local Compose PostgreSQL"
-	@echo "  make tunnel   - Start Docker services, then expose the backend with ngrok"
+	@echo "Local / Dev (Docker Hot-Reload):"
+	@echo "  make up          - Build & start PostgreSQL + Backend (Hot Reload) with Docker Compose"
+	@echo "  make down        - Stop all local Docker Compose services"
+	@echo "  make restart     - Restart all local Docker Compose services"
+	@echo "  make restart-be  - Restart only the backend container"
+	@echo "  make logs        - Follow backend container logs"
+	@echo "  make ps          - Show running Compose services"
+	@echo "  make build       - Rebuild the local backend Docker image"
+	@echo "  make db-push     - Push Prisma schema using Docker container (no host Node needed)"
+	@echo "  make db-push-host- Push Prisma schema from host (requires Node & Prisma on host)"
+	@echo "  make sh          - Open a shell inside the backend container"
 	@echo ""
-	@echo "Production/Linux server:"
-	@echo "  make prod-build    - Build the production Docker image"
-	@echo "  make prod-up       - Build image, then start production Compose services"
-	@echo "  make prod-down     - Stop production Compose services"
-	@echo "  make prod-restart  - Restart production Compose services"
-	@echo "  make prod-logs     - Follow production backend logs"
-	@echo "  make prod-ps       - Show production Compose services"
+	@echo "Production / Linux server:"
+	@echo "  make prod-build  - Build the production Docker image"
+	@echo "  make prod-up     - Start production Compose services"
+	@echo "  make prod-down   - Stop production Compose services"
+	@echo "  make prod-restart- Restart production Compose services"
+	@echo "  make prod-logs   - Follow production backend logs"
+	@echo "  make prod-ps     - Show production Compose services"
 
 up:
 	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) up -d --build
@@ -39,6 +41,9 @@ down:
 	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) down
 
 restart: down up
+
+restart-be:
+	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) restart auto-research-be
 
 logs:
 	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) logs -f auto-research-be
@@ -50,10 +55,13 @@ build:
 	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) build auto-research-be
 
 db-push:
-	powershell -NoProfile -Command "$$env:DATABASE_URL='$(DATABASE_URL_HOST)'; npx prisma db push"
+	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) exec auto-research-be npx prisma db push
 
-tunnel:
-	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local-tunnel.ps1 -Port $(APP_PORT) -ApiPrefix "$(API_PREFIX)" -ComposeFile "$(LOCAL_COMPOSE_FILE)" -ProjectName "$(LOCAL_PROJECT)"
+db-push-host:
+	DATABASE_URL='$(DATABASE_URL_HOST)' npx prisma db push
+
+sh:
+	docker compose -p $(LOCAL_PROJECT) -f $(LOCAL_COMPOSE_FILE) exec auto-research-be sh
 
 prod-build:
 	docker build -t $(IMAGE_NAME):$(BUILD_NUMBER) -t $(IMAGE_NAME):latest .
