@@ -20,16 +20,22 @@ services:
   auto-research-be:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: auto-research-be:local
+      dockerfile: Dockerfile.dev
+    image: auto-research-be:dev
     container_name: auto-research-be-local
     env_file:
       - .env
     environment:
-      NODE_ENV: production
-      IS_LOCAL: "false"
+      NODE_ENV: development
+      IS_LOCAL: "true"
       PORT: 3001
       DATABASE_URL: postgresql://postgres:postgres@auto-research-postgres:5432/autoresearch?schema=public
+      KAFKA: ${KAFKA:-167.254.70.125:9092}
+    volumes:
+      # Bind mount project source for live hot-reload
+      - ./:/app
+      # Keep container's node_modules isolated from host
+      - /app/node_modules
     ports:
       - "3001:3001"
     depends_on:
@@ -37,5 +43,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  auto-research-prisma-studio:
+    image: auto-research-be:dev
+    container_name: auto-research-prisma-studio-local
+    command: ["npx", "prisma", "studio", "--port", "5555", "--browser", "none"]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@auto-research-postgres:5432/autoresearch?schema=public
+    ports:
+      - "5555:5555"
+    depends_on:
+      auto-research-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   auto_research_postgres_local_data:
+
+networks:
+  default:
+    name: auto-research-be-net

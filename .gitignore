@@ -56,3 +56,9 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Personal & AI documentation
+AGENTS.md
+DOCS_INDEX.md
+tasks/
+docs/completed_tasks/

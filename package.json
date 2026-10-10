@@ -21,7 +21,10 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "docker:dev": "bash scripts/dev-setup.sh",
+    "docker:down": "docker compose -p auto-research-be-local -f docker-compose.local.yml down",
+    "docker:db-push": "docker compose -p auto-research-be-local -f docker-compose.local.yml exec auto-research-be npx prisma db push"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

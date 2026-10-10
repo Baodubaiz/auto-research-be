@@ -1,114 +1,165 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚀 AUTO-RESEARCH-BE
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> Backend API service cho hệ thống Nghiên cứu Tự động (**Auto Research**), phát triển bằng **NestJS 12**, **TypeScript 6**, **Prisma ORM**, **PostgreSQL**, **Apache Kafka** và **Redis**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## ⚡ HƯỚNG DẪN KHỞI CHẠY NHANH (DOCKER DEV + HOT RELOAD)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Dự án đã được tích hợp bộ script **tự động hóa 100%** (tự kiểm tra Docker, tự tạo `.env`, tự tạo Docker Network `autoresearching-net`, tự đồng bộ Database và bật Logs theo dõi Hot Reload).
 
-## Project setup
-
+### 🐧 Dành cho Linux / macOS:
+Chạy **1 lệnh duy nhất** tại thư mục gốc dự án:
 ```bash
-$ npm install
+./scripts/dev-setup.sh
 ```
 
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+### 🪟 Dành cho Windows (PowerShell):
+Mở PowerShell tại thư mục gốc dự án và chạy:
+```powershell
+.\scripts\dev-setup.ps1
 ```
 
-## Run tests
+> 💡 **Cơ chế thông minh:**
+> - Nếu container **chưa chạy**: Script sẽ tự động build image dev, khởi động Postgres + Backend, chạy `prisma db push` đồng bộ schema và mở logs.
+> - Nếu container **đang chạy sẵn**: Script sẽ phát hiện và chỉ bật logs lên để bạn tiếp tục code, tránh khởi tạo trùng gây xung đột.
+> - **Hot Reload**: Bất kỳ thay đổi code nào trong `src/` khi bạn lưu file (`Ctrl + S`) sẽ được NestJS tự động biên dịch lại ngay lập tức trong container!
 
-```bash
-# unit tests
-$ npm run test
+---
 
-# e2e tests
-$ npm run test:e2e
+## 🌐 DANH SÁCH ĐƯỜNG DẪN TRUY CẬP (QUICK ACCESS URLS)
 
-# test coverage
-$ npm run test:cov
+Do logs của NestJS khi khởi động ánh xạ hàng trăm route nên dễ bị trôi thông tin, dưới đây là bảng tổng hợp các địa chỉ và endpoint quan trọng:
+
+### 1. Địa chỉ dịch vụ cốt lõi
+
+| Dịch vụ | URL / Cổng truy cập | Thông tin kết nối / Hướng dẫn |
+|---|---|---|
+| **Backend API Base** | [`http://localhost:3001/api/v1`](http://localhost:3001/api/v1) | Endpoint gốc API (Health check) |
+| **Prisma Studio (Web GUI)** | [`http://localhost:5555`](http://localhost:5555) | 🌐 **Xem Database trên trình duyệt web** (không cần cài phần mềm) |
+| **PostgreSQL Database** | `localhost:5432` | 💻 Kết nối bằng **DBeaver, Navicat, TablePlus**<br>User: `postgres` \| Pass: `postgres` \| DB: `autoresearch` |
+
+#### 📖 Hướng dẫn kết nối Database cho thành viên trong team:
+
+- **Cách 1: Xem nhanh trên trình duyệt Web (Không cần cài phần mềm - Tiện lợi cho Linux)**
+  - Mở trình duyệt truy cập: [`http://localhost:5555`](http://localhost:5555)
+  - Toàn bộ bảng, dữ liệu sẽ hiển thị dạng bảng tính trực quan để xem, tìm kiếm và chỉnh sửa trực tiếp.
+
+- **Cách 2: Dùng phần mềm quản trị chuyên dụng (DBeaver, TablePlus, Navicat, DataGrip)**
+  1. Mở phần mềm quản lý Database yêu thích của bạn lên.
+  2. Tạo kết nối mới (**New Connection**) và chọn loại database là **PostgreSQL**.
+  3. Điền các thông số kết nối chuẩn sau:
+     - **Host / Server**: `localhost` (hoặc `127.0.0.1`)
+     - **Port**: `5432`
+     - **Database**: `autoresearch`
+     - **Username**: `postgres`
+     - **Password**: `postgres`
+  4. Bấm **Test Connection** để kiểm tra kết nối thành công, sau đó bấm **Save / Connect** để bắt đầu viết câu lệnh SQL và quản lý bảng.
+
+---
+
+### 2. Thông tin Hạ tầng VPS & Dịch vụ AI (Monitoring & Storage)
+
+Toàn bộ dịch vụ Apache Kafka Broker, AI Workers và công cụ giám sát lưu trữ được triển khai tập trung trên VPS công khai:
+
+| Dịch vụ | Địa chỉ / URL | Ghi chú & Tài khoản |
+|---|---|---|
+| **Máy chủ VPS** | `167.254.70.125` | IP máy chủ dịch vụ nền tảng AI |
+| **Kafka Broker** | `167.254.70.125:9092` | Protocol: `PLAINTEXT` |
+| **Kafka UI (Web)** | [`http://167.254.70.125:8080`](http://167.254.70.125:8080) | Giao diện Web theo dõi topics & events Kafka |
+| **MinIO Console (S3)** | [`http://167.254.70.125:9001`](http://167.254.70.125:9001) | User: `minio_admin` \| Pass: `minio_password_local` |
+| **Qdrant Dashboard** | [`http://167.254.70.125:6333/dashboard`](http://167.254.70.125:6333/dashboard) | Vector Database Dashboard |
+
+#### 📚 Tài liệu tích hợp hệ thống (Integration Documentation):
+- `docs/KAFKA_INTEGRATION_GUIDE.md`: Định dạng sự kiện Kafka và đặc tả cấu trúc JSON Payload.
+- `docs/FE_DOCUMENT_SETUP_TASKS.md`: Luồng nghiệp vụ Frontend và yêu cầu xử lý cấp màn hình.
+
+---
+
+### 3. Danh mục API Endpoints chính (`/api/v1/...`)
+
+#### 🔐 Xác thực & Người dùng (Auth & Users)
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST` | `/api/v1/auth/register` | Đăng ký tài khoản mới |
+| `POST` | `/api/v1/auth/login` | Đăng nhập lấy JWT Bearer token |
+| `GET` | `/api/v1/users/profile` | Xem thông tin cá nhân |
+| `PATCH`| `/api/v1/users/change-password` | Đổi mật khẩu người dùng |
+
+#### 📄 Thiết lập tài liệu nghiên cứu (Document Setup)
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST / GET` | `/api/v1/documents` | Tạo mới / Lấy danh sách tài liệu nghiên cứu |
+| `GET / PATCH / DELETE` | `/api/v1/documents/:id` | Xem chi tiết, cập nhật, xóa document |
+| `POST / GET` | `/api/v1/proposals` | Đề xuất nghiên cứu (problem statement, motivation) |
+| `POST / GET` | `/api/v1/document-keywords` | Từ khóa chính, từ khóa phụ, search queries |
+| `POST / GET` | `/api/v1/references` | Tài liệu tham khảo, trạng thái tải PDF open-access |
+| `POST / GET` | `/api/v1/user-uploaded-documents` | Tài liệu PDF người dùng upload và embedding |
+| `POST / GET` | `/api/v1/outlines` | Cấu trúc đề cương và số lượng từ mục tiêu |
+
+#### 📊 Soạn thảo báo cáo & Phân tích dữ liệu (Write Report)
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST / GET` | `/api/v1/reports` | Nội dung báo cáo Markdown |
+| `POST / GET` | `/api/v1/datasets` | Quản lý tập dữ liệu CSV/Excel tải lên |
+| `POST / GET` | `/api/v1/dataset-variables` | Danh sách biến (Type, Role, Scale, Unit) |
+| `POST / GET` | `/api/v1/proposed-methods` | Phương pháp đề xuất, mô hình, giả thuyết nghiên cứu |
+| `POST / GET` | `/api/v1/generated-slides` | Slide thuyết trình được sinh tự động (.pptx) |
+
+#### 💬 Trợ lý AI Chatbot
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST / GET` | `/api/v1/chat-sessions` | Phiên trò chuyện (`outer_chatbot`, `inner_chatbot`, `writer_chatbot`) |
+| `POST / GET` | `/api/v1/chat-messages` | Lịch sử và gửi tin nhắn trao đổi với AI |
+
+#### ✨ Tối ưu hóa văn bản (Enhancement)
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `POST / GET` | `/api/v1/enhancement-sessions` | Phiên cải tiến theo đoạn văn bản chọn |
+| `POST / GET` | `/api/v1/enhancement-suggestions`| Gợi ý sửa lỗi ngữ pháp, viết lại, học thuật hóa |
+
+#### ⚙️ Quản lý tác vụ bất đồng bộ (Jobs)
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/api/v1/jobs` | Lấy danh sách tác vụ (hỗ trợ query `?status=...`) |
+| `GET` | `/api/v1/jobs/:id` | Xem tiến độ chi tiết của một Job |
+| `PATCH`| `/api/v1/jobs/:id/resume` | Tiếp tục thực thi Job bị tạm dừng từ `resumeStep` |
+
+---
+
+## 🛠️ CÁC LỆNH TIỆN ÍCH DÀNH CHO DEVELOPER
+
+Bạn có thể dùng lệnh `make` hoặc `npm run`:
+
+| Mục đích | Lệnh Makefile | Lệnh NPM |
+|---|---|---|
+| **Khởi động Dev (Hot Reload)** | `make up` | `npm run docker:dev` |
+| **Xem logs thời gian thực** | `make logs` | `docker logs -f auto-research-be-local` |
+| **Tắt môi trường Docker** | `make down` | `npm run docker:down` |
+| **Đồng bộ Database (Prisma)** | `make db-push` | `npm run docker:db-push` |
+| **Khởi động lại chỉ riêng Backend**| `make restart-be` | `docker restart auto-research-be-local` |
+| **Mở Terminal bên trong Container**| `make sh` | `docker exec -it auto-research-be-local sh` |
+| **Chạy Linter kiểm tra code** | — | `npm run lint` |
+| **Format code toàn dự án** | — | `npm run format` |
+
+---
+
+## 🏗️ CẤU TRÚC THƯ MỤC CHÍNH
+
+```text
+auto-research-be/
+├── Dockerfile.dev             # Dockerfile tối ưu cho phát triển có Hot Reload
+├── Dockerfile                 # Multi-stage Dockerfile cho Production CI/CD
+├── docker-compose.local.yml   # Compose cho môi trường dev cục bộ
+├── Makefile                   # Tập hợp lệnh tiện ích
+├── scripts/
+│   ├── dev-setup.sh           # Script 1-click khởi chạy tự động cho Linux/macOS
+│   └── dev-setup.ps1          # Script 1-click khởi chạy tự động cho Windows
+├── prisma/
+│   └── schema.prisma          # Toàn bộ Database Models và Enums
+└── src/
+    ├── config/                # Cấu hình tập trung (@nestjs/config)
+    ├── database/              # PrismaService & PrismaModule
+    ├── messaging/             # Apache Kafka Client & Redis Client
+    └── modules/               # Các Domain Modules nghiệp vụ
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
