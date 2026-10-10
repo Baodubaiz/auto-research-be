@@ -67,6 +67,7 @@ Toàn bộ dịch vụ Apache Kafka Broker, AI Workers và công cụ giám sát
 | **Máy chủ VPS** | `167.254.70.125` | IP máy chủ dịch vụ nền tảng AI |
 | **Kafka Broker** | `167.254.70.125:9092` | Protocol: `PLAINTEXT` |
 | **Kafka UI (Web)** | [`http://167.254.70.125:8080`](http://167.254.70.125:8080) | Giao diện Web theo dõi topics & events Kafka |
+| **Local LLM API** | [`http://167.254.70.125:8000/v1`](http://167.254.70.125:8000/v1) | Model đang sử dụng: `openai/gpt-oss-120b` (OpenAI-compatible) |
 | **MinIO Console (S3)** | [`http://167.254.70.125:9001`](http://167.254.70.125:9001) | User: `minio_admin` \| Pass: `minio_password_local` |
 | **Qdrant Dashboard** | [`http://167.254.70.125:6333/dashboard`](http://167.254.70.125:6333/dashboard) | Vector Database Dashboard |
 
