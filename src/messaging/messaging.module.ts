@@ -22,10 +22,10 @@ import { KAFKA_CLIENT, REDIS_CLIENT } from '../common/messaging.tokens';
             },
             consumer: {
               groupId: configService.getOrThrow<string>('kafka.groupId'),
-              allowAutoTopicCreation: false,
+              allowAutoTopicCreation: true,
             },
             producer: {
-              allowAutoTopicCreation: false,
+              allowAutoTopicCreation: true,
             },
           },
         }),

@@ -14,7 +14,15 @@ export class CreateJobDto {
 
   @IsOptional()
   @IsString()
+  document_id?: string;
+
+  @IsOptional()
+  @IsString()
   sessionId?: string;
+
+  @IsOptional()
+  @IsString()
+  session_id?: string;
 
   @IsOptional()
   @IsEnum(JobStatus)

@@ -5,7 +5,8 @@ export default registerAs('kafka', () => {
     process.env.IS_LOCAL === 'true' || process.env.NODE_ENV !== 'production';
   const suffix = isLocal ? '_local' : '';
 
-  const rawBrokers = process.env.KAFKA || process.env.KAFKA_BROKERS || 'localhost:9092';
+  const rawBrokers =
+    process.env.KAFKA || process.env.KAFKA_BROKERS || 'localhost:9092';
   const brokers = rawBrokers.split(',').map((b) => b.trim());
 
   return {
@@ -15,11 +16,11 @@ export default registerAs('kafka', () => {
     groupId: process.env.KAFKA_GROUP_ID || 'autoresearch-group',
     ssl: process.env.KAFKA_SSL === 'true',
     topics: {
-      documentSetup: {
+      document_setup: {
         request: `document_setup_request${suffix}`,
         response: `document_setup_response${suffix}`,
       },
-      writeReport: {
+      write_report: {
         request: `write_section_request${suffix}`,
         response: `write_section_response${suffix}`,
       },
