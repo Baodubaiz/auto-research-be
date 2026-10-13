@@ -9,7 +9,10 @@ export class DocumentProposedMethodController {
   constructor(private readonly service: ProposedMethodService) {}
 
   @Get(':documentId/proposed-methods')
-  findAll(@CurrentUser('sub') userId: string, @Param('documentId') documentId: string) {
+  findAll(
+    @CurrentUser('sub') userId: string,
+    @Param('documentId') documentId: string,
+  ) {
     return this.service.findAll(userId, documentId);
   }
 }

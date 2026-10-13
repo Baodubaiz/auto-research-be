@@ -32,7 +32,10 @@ export class EnhancementSessionService {
 
   async update(userId: string, id: string, dto: UpdateEnhancementSessionDto) {
     const session = await this.findOne(userId, id);
-    return this.prisma.enhancementSession.update({ where: { id: session.id }, data: dto });
+    return this.prisma.enhancementSession.update({
+      where: { id: session.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {

@@ -1,4 +1,12 @@
-import { IsBoolean, IsDefined, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { DocStatus, Prisma } from '@prisma/client';
 
 export class UpdateDocumentDto {

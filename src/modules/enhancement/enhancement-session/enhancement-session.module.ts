@@ -7,7 +7,11 @@ import { EnhancementSessionService } from './enhancement-session.service';
 
 @Module({
   imports: [AuthModule],
-  controllers: [EnhancementSessionController, EnhancementSessionRouteController, DocumentEnhancementSessionController],
+  controllers: [
+    EnhancementSessionController,
+    EnhancementSessionRouteController,
+    DocumentEnhancementSessionController,
+  ],
   providers: [EnhancementSessionService],
   exports: [EnhancementSessionService],
 })

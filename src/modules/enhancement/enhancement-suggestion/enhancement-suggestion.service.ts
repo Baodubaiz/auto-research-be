@@ -21,25 +21,43 @@ export class EnhancementSuggestionService {
   }
 
   async findOne(userId: string, id: string) {
-    const suggestion = await this.prisma.enhancementSuggestion.findFirst({ where: { id, session: { document: { userId } } } });
-    if (!suggestion) throw new NotFoundException('Enhancement suggestion not found');
+    const suggestion = await this.prisma.enhancementSuggestion.findFirst({
+      where: { id, session: { document: { userId } } },
+    });
+    if (!suggestion)
+      throw new NotFoundException('Enhancement suggestion not found');
     return suggestion;
   }
 
-  async update(userId: string, id: string, dto: UpdateEnhancementSuggestionDto) {
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateEnhancementSuggestionDto,
+  ) {
     const suggestion = await this.findOne(userId, id);
-    return this.prisma.enhancementSuggestion.update({ where: { id: suggestion.id }, data: dto });
+    return this.prisma.enhancementSuggestion.update({
+      where: { id: suggestion.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
     const suggestion = await this.findOne(userId, id);
-    await this.prisma.enhancementSuggestion.delete({ where: { id: suggestion.id } });
+    await this.prisma.enhancementSuggestion.delete({
+      where: { id: suggestion.id },
+    });
     return { message: 'Enhancement suggestion deleted successfully' };
   }
 
-  async createForSession(userId: string, sessionId: string, dto: Omit<CreateEnhancementSuggestionDto, 'sessionId'>) {
+  async createForSession(
+    userId: string,
+    sessionId: string,
+    dto: Omit<CreateEnhancementSuggestionDto, 'sessionId'>,
+  ) {
     await this.ensureSession(userId, sessionId);
-    return this.prisma.enhancementSuggestion.create({ data: { ...dto, sessionId } });
+    return this.prisma.enhancementSuggestion.create({
+      data: { ...dto, sessionId },
+    });
   }
 
   private async ensureSession(userId: string, sessionId: string) {
