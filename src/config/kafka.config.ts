@@ -6,7 +6,7 @@ export default registerAs('kafka', () => {
   const suffix = isLocal ? '_local' : '';
 
   const rawBrokers =
-    process.env.KAFKA || process.env.KAFKA_BROKERS || 'localhost:9092';
+    process.env.KAFKA || process.env.KAFKA_BROKERS || '167.254.70.125:9092';
   const brokers = rawBrokers.split(',').map((b) => b.trim());
 
   return {

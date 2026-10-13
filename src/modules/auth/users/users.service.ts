@@ -29,10 +29,7 @@ export class UsersService {
   async findByEmailOrUserName(identifier: string) {
     return this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: identifier.toLowerCase() },
-          { userName: identifier },
-        ],
+        OR: [{ email: identifier.toLowerCase() }, { userName: identifier }],
       },
     });
   }
@@ -115,7 +112,10 @@ export class UsersService {
         select: publicUserSelect,
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException('User not found');
       }
       throw error;
@@ -127,14 +127,21 @@ export class UsersService {
       await this.prisma.user.delete({ where: { id } });
       return { message: 'User deleted successfully' };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
         throw new NotFoundException('User not found');
       }
       throw error;
     }
   }
 
-  async changePassword(id: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    id: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {

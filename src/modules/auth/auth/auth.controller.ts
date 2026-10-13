@@ -21,10 +21,7 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  logout(
-    @CurrentUser('jti') jti: string,
-    @CurrentUser('exp') exp: number,
-  ) {
+  logout(@CurrentUser('jti') jti: string, @CurrentUser('exp') exp: number) {
     return this.authService.logout(jti, exp);
   }
 }

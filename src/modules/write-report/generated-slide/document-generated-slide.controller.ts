@@ -9,7 +9,10 @@ export class DocumentGeneratedSlideController {
   constructor(private readonly service: GeneratedSlideService) {}
 
   @Get(':documentId/generated-slides')
-  findAll(@CurrentUser('sub') userId: string, @Param('documentId') documentId: string) {
+  findAll(
+    @CurrentUser('sub') userId: string,
+    @Param('documentId') documentId: string,
+  ) {
     return this.service.findAll(userId, documentId);
   }
 }

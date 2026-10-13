@@ -21,14 +21,19 @@ export class ProposedMethodService {
   }
 
   async findOne(userId: string, id: string) {
-    const method = await this.prisma.proposedMethod.findFirst({ where: { id, document: { userId } } });
+    const method = await this.prisma.proposedMethod.findFirst({
+      where: { id, document: { userId } },
+    });
     if (!method) throw new NotFoundException('Proposed method not found');
     return method;
   }
 
   async update(userId: string, id: string, dto: UpdateProposedMethodDto) {
     const method = await this.findOne(userId, id);
-    return this.prisma.proposedMethod.update({ where: { id: method.id }, data: dto });
+    return this.prisma.proposedMethod.update({
+      where: { id: method.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
@@ -38,7 +43,10 @@ export class ProposedMethodService {
   }
 
   private async ensureDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }

@@ -9,7 +9,10 @@ export class DocumentEnhancementSessionController {
   constructor(private readonly service: EnhancementSessionService) {}
 
   @Get(':documentId/enhancement-sessions')
-  findAll(@CurrentUser('sub') userId: string, @Param('documentId') documentId: string) {
+  findAll(
+    @CurrentUser('sub') userId: string,
+    @Param('documentId') documentId: string,
+  ) {
     return this.service.findAll(userId, documentId);
   }
 }

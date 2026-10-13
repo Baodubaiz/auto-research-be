@@ -23,7 +23,10 @@ export class JobsKafkaProducer implements OnModuleInit {
   }
 
   async publishJob(job: Job): Promise<void> {
-    const topicsConfig = this.configService.get<Record<string, { request: string }>>('kafka.topics');
+    const topicsConfig =
+      this.configService.get<Record<string, { request: string }>>(
+        'kafka.topics',
+      );
     const moduleConfig = topicsConfig?.[job.module];
 
     if (!moduleConfig?.request) {
@@ -32,7 +35,9 @@ export class JobsKafkaProducer implements OnModuleInit {
     }
 
     const isLocal = this.configService.get<boolean>('app.isLocal', true);
-    const localLlmBaseUrl = this.configService.get<string>('app.localLlmBaseUrl');
+    const localLlmBaseUrl = this.configService.get<string>(
+      'app.localLlmBaseUrl',
+    );
 
     const topic = moduleConfig.request;
     const payload = {
@@ -47,12 +52,16 @@ export class JobsKafkaProducer implements OnModuleInit {
       payload: job.payload || {},
     };
 
-    this.logger.log(`Publishing job ${job.id} [${job.module}:${job.action}] to topic: ${topic}`);
+    this.logger.log(
+      `Publishing job ${job.id} [${job.module}:${job.action}] to topic: ${topic}`,
+    );
 
     try {
       this.clientKafka.emit(topic, JSON.stringify(payload));
     } catch (error) {
-      this.logger.error(`Failed to publish job ${job.id} to Kafka topic ${topic}: ${error}`);
+      this.logger.error(
+        `Failed to publish job ${job.id} to Kafka topic ${topic}: ${error}`,
+      );
     }
   }
 }

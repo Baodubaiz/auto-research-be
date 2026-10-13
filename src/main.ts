@@ -17,7 +17,8 @@ async function bootstrap() {
     'http://localhost:3000',
   ]);
   const bodyLimit = configService.get<string>('app.bodyLimit', '10mb');
-  const kafkaEnabled = configService.get<string>('KAFKA_ENABLED', 'false') === 'true';
+  const kafkaEnabled =
+    configService.get<string>('KAFKA_ENABLED', 'true') !== 'false';
 
   app.enableCors({
     origin: corsOrigins,
@@ -37,35 +38,53 @@ async function bootstrap() {
 
   // Start HTTP server immediately — always available
   await app.listen(port);
-  logger.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
+  logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${apiPrefix}`,
+  );
 
-  // Only connect Kafka if KAFKA_ENABLED=true in .env
+  // Only connect Kafka if KAFKA_ENABLED !== 'false' in .env
   if (kafkaEnabled) {
-    const rawBrokers = configService.get<string>('kafka.brokers') || 'localhost:9092';
+    const rawBrokers =
+      configService.get<string | string[]>('kafka.brokers') ||
+      '167.254.70.125:9092';
     const brokers = Array.isArray(rawBrokers)
       ? rawBrokers
-      : String(rawBrokers).split(',').map((b) => b.trim());
+      : String(rawBrokers)
+          .split(',')
+          .map((b) => b.trim());
 
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.KAFKA,
       options: {
         client: {
-          clientId: configService.get<string>('kafka.clientId', 'autoresearch-backend') + '-consumer',
+          clientId:
+            configService.get<string>(
+              'kafka.clientId',
+              'autoresearch-backend',
+            ) + '-consumer',
           brokers,
           ssl: configService.get<boolean>('kafka.ssl', false),
         },
         consumer: {
-          groupId: configService.get<string>('kafka.groupId', 'autoresearch-group'),
+          groupId: configService.get<string>(
+            'kafka.groupId',
+            'autoresearch-group',
+          ),
           allowAutoTopicCreation: true,
         },
       },
     });
 
-    app.startAllMicroservices()
+    app
+      .startAllMicroservices()
       .then(() => logger.log('✅ Kafka microservice connected'))
-      .catch((err) => logger.warn(`⚠️  Kafka unavailable (non-fatal): ${err.message}`));
+      .catch((err: any) =>
+        logger.warn(`⚠️  Kafka unavailable (non-fatal): ${err.message}`),
+      );
   } else {
-    logger.warn('⚠️  Kafka disabled (KAFKA_ENABLED=false). Set KAFKA_ENABLED=true in .env to enable.');
+    logger.warn(
+      '⚠️  Kafka disabled (KAFKA_ENABLED=false). Set KAFKA_ENABLED=true in .env to enable.',
+    );
   }
 }
 bootstrap();

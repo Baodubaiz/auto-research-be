@@ -12,7 +12,13 @@ import { REDIS_CLIENT } from '../messaging.tokens';
 
 type AuthenticatedRequest = {
   headers: { authorization?: string };
-  user?: { sub: string; email: string; userName: string; jti: string; exp: number };
+  user?: {
+    sub: string;
+    email: string;
+    userName: string;
+    jti: string;
+    exp: number;
+  };
 };
 
 @Injectable()
@@ -34,7 +40,10 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      const redisEnabled = this.configService.get<boolean>('redis.enabled', false);
+      const redisEnabled = this.configService.get<boolean>(
+        'redis.enabled',
+        false,
+      );
       const isRevoked = redisEnabled
         ? await this.redis.get(`revoked-token:${payload.jti}`)
         : null;

@@ -22,7 +22,10 @@ export class DatasetService {
   }
 
   async findOne(userId: string, id: string) {
-    const dataset = await this.prisma.dataset.findFirst({ where: { id, document: { userId } }, include: { variables: true } });
+    const dataset = await this.prisma.dataset.findFirst({
+      where: { id, document: { userId } },
+      include: { variables: true },
+    });
     if (!dataset) throw new NotFoundException('Dataset not found');
     return dataset;
   }
@@ -39,7 +42,10 @@ export class DatasetService {
   }
 
   private async ensureDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }
