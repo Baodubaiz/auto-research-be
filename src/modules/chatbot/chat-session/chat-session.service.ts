@@ -43,12 +43,18 @@ export class ChatSessionService {
   }
 
   private async ensureUser(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) throw new NotFoundException('User not found');
   }
 
   private async ensureDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }

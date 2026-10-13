@@ -21,14 +21,19 @@ export class GeneratedSlideService {
   }
 
   async findOne(userId: string, id: string) {
-    const slide = await this.prisma.generatedSlide.findFirst({ where: { id, document: { userId } } });
+    const slide = await this.prisma.generatedSlide.findFirst({
+      where: { id, document: { userId } },
+    });
     if (!slide) throw new NotFoundException('Generated slide not found');
     return slide;
   }
 
   async update(userId: string, id: string, dto: UpdateGeneratedSlideDto) {
     const slide = await this.findOne(userId, id);
-    return this.prisma.generatedSlide.update({ where: { id: slide.id }, data: dto });
+    return this.prisma.generatedSlide.update({
+      where: { id: slide.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
@@ -38,7 +43,10 @@ export class GeneratedSlideService {
   }
 
   private async ensureDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }

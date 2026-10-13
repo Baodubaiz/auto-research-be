@@ -21,14 +21,19 @@ export class ChatMessageService {
   }
 
   async findOne(userId: string, id: string) {
-    const message = await this.prisma.chatMessage.findFirst({ where: { id, session: { userId } } });
+    const message = await this.prisma.chatMessage.findFirst({
+      where: { id, session: { userId } },
+    });
     if (!message) throw new NotFoundException('Chat message not found');
     return message;
   }
 
   async update(userId: string, id: string, dto: UpdateChatMessageDto) {
     const message = await this.findOne(userId, id);
-    return this.prisma.chatMessage.update({ where: { id: message.id }, data: dto });
+    return this.prisma.chatMessage.update({
+      where: { id: message.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
@@ -37,13 +42,20 @@ export class ChatMessageService {
     return { message: 'Chat message deleted successfully' };
   }
 
-  async createForSession(userId: string, sessionId: string, dto: Omit<CreateChatMessageDto, 'sessionId'>) {
+  async createForSession(
+    userId: string,
+    sessionId: string,
+    dto: Omit<CreateChatMessageDto, 'sessionId'>,
+  ) {
     await this.ensureSession(userId, sessionId);
     return this.prisma.chatMessage.create({ data: { ...dto, sessionId } });
   }
 
   private async ensureSession(userId: string, sessionId: string) {
-    const session = await this.prisma.chatSession.findUnique({ where: { id: sessionId, userId }, select: { id: true } });
+    const session = await this.prisma.chatSession.findUnique({
+      where: { id: sessionId, userId },
+      select: { id: true },
+    });
     if (!session) throw new NotFoundException('Chat session not found');
   }
 }

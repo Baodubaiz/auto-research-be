@@ -48,7 +48,7 @@ export class JobsKafkaConsumer {
         typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
 
       this.logger.log(
-        `Received Kafka response for ${module} job ${response.job_id}: status=${response.status}`
+        `Received Kafka response for ${module} job ${response.job_id}: status=${response.status}`,
       );
 
       if (!response.job_id) {
@@ -63,8 +63,9 @@ export class JobsKafkaConsumer {
         errorCode: response.error_code || undefined,
       });
     } catch (error) {
-      this.logger.error(`Error processing Kafka response for ${module}: ${error}`);
+      this.logger.error(
+        `Error processing Kafka response for ${module}: ${error}`,
+      );
     }
   }
 }
-

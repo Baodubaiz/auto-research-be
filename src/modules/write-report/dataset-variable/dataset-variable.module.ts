@@ -4,5 +4,10 @@ import { DatasetVariableController } from './dataset-variable.controller';
 import { DatasetVariableDocumentController } from './dataset-variable-document.controller';
 import { DatasetVariableService } from './dataset-variable.service';
 
-@Module({ imports: [AuthModule], controllers: [DatasetVariableController, DatasetVariableDocumentController], providers: [DatasetVariableService], exports: [DatasetVariableService] })
+@Module({
+  imports: [AuthModule],
+  controllers: [DatasetVariableController, DatasetVariableDocumentController],
+  providers: [DatasetVariableService],
+  exports: [DatasetVariableService],
+})
 export class DatasetVariableModule {}

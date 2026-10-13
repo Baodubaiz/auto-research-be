@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CreateDatasetVariableDto } from './dto/create-dataset-variable.dto';
@@ -11,17 +21,37 @@ export class DatasetVariableController {
   constructor(private readonly service: DatasetVariableService) {}
 
   @Post()
-  create(@CurrentUser('sub') userId: string, @Body() dto: CreateDatasetVariableDto) { return this.service.create(userId, dto); }
+  create(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateDatasetVariableDto,
+  ) {
+    return this.service.create(userId, dto);
+  }
 
   @Get()
-  findAll(@CurrentUser('sub') userId: string, @Query('datasetId') datasetId?: string) { return this.service.findAll(userId, datasetId); }
+  findAll(
+    @CurrentUser('sub') userId: string,
+    @Query('datasetId') datasetId?: string,
+  ) {
+    return this.service.findAll(userId, datasetId);
+  }
 
   @Get(':id')
-  findOne(@CurrentUser('sub') userId: string, @Param('id') id: string) { return this.service.findOne(userId, id); }
+  findOne(@CurrentUser('sub') userId: string, @Param('id') id: string) {
+    return this.service.findOne(userId, id);
+  }
 
   @Patch(':id')
-  update(@CurrentUser('sub') userId: string, @Param('id') id: string, @Body() dto: UpdateDatasetVariableDto) { return this.service.update(userId, id, dto); }
+  update(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateDatasetVariableDto,
+  ) {
+    return this.service.update(userId, id, dto);
+  }
 
   @Delete(':id')
-  remove(@CurrentUser('sub') userId: string, @Param('id') id: string) { return this.service.remove(userId, id); }
+  remove(@CurrentUser('sub') userId: string, @Param('id') id: string) {
+    return this.service.remove(userId, id);
+  }
 }

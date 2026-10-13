@@ -21,14 +21,19 @@ export class DatasetVariableService {
   }
 
   async findOne(userId: string, id: string) {
-    const variable = await this.prisma.datasetVariable.findFirst({ where: { id, dataset: { document: { userId } } } });
+    const variable = await this.prisma.datasetVariable.findFirst({
+      where: { id, dataset: { document: { userId } } },
+    });
     if (!variable) throw new NotFoundException('Dataset variable not found');
     return variable;
   }
 
   async update(userId: string, id: string, dto: UpdateDatasetVariableDto) {
     const variable = await this.findOne(userId, id);
-    return this.prisma.datasetVariable.update({ where: { id: variable.id }, data: dto });
+    return this.prisma.datasetVariable.update({
+      where: { id: variable.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
@@ -38,7 +43,10 @@ export class DatasetVariableService {
   }
 
   private async ensureDataset(userId: string, datasetId: string) {
-    const dataset = await this.prisma.dataset.findFirst({ where: { id: datasetId, document: { userId } }, select: { id: true } });
+    const dataset = await this.prisma.dataset.findFirst({
+      where: { id: datasetId, document: { userId } },
+      select: { id: true },
+    });
     if (!dataset) throw new NotFoundException('Dataset not found');
   }
 }

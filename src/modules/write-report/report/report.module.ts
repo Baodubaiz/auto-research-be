@@ -4,5 +4,10 @@ import { ReportController } from './report.controller';
 import { DocumentReportController } from './document-report.controller';
 import { ReportService } from './report.service';
 
-@Module({ imports: [AuthModule], controllers: [ReportController, DocumentReportController], providers: [ReportService], exports: [ReportService] })
+@Module({
+  imports: [AuthModule],
+  controllers: [ReportController, DocumentReportController],
+  providers: [ReportService],
+  exports: [ReportService],
+})
 export class ReportModule {}

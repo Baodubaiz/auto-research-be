@@ -7,9 +7,13 @@ import { UpdateReferenceDto } from './dto/update-reference.dto';
 export class ReferenceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateReferenceDto) { return this.prisma.reference.create({ data: dto }); }
+  create(dto: CreateReferenceDto) {
+    return this.prisma.reference.create({ data: dto });
+  }
 
-  findAll() { return this.prisma.reference.findMany({ orderBy: { createdAt: 'desc' } }); }
+  findAll() {
+    return this.prisma.reference.findMany({ orderBy: { createdAt: 'desc' } });
+  }
 
   async findOne(id: string) {
     const reference = await this.prisma.reference.findUnique({ where: { id } });

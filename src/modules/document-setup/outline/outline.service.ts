@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateOutlineDto } from './dto/create-outline.dto';
@@ -13,8 +18,13 @@ export class OutlineService {
     try {
       return await this.prisma.outline.create({ data: dto });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('An outline already exists for this document');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'An outline already exists for this document',
+        );
       }
       throw error;
     }
@@ -23,7 +33,9 @@ export class OutlineService {
   async findByDocument(userId: string, documentId: string) {
     if (!documentId) throw new BadRequestException('documentId is required');
     await this.ensureOwnedDocument(userId, documentId);
-    const outline = await this.prisma.outline.findUnique({ where: { documentId } });
+    const outline = await this.prisma.outline.findUnique({
+      where: { documentId },
+    });
     if (!outline) throw new NotFoundException('Outline not found');
     return outline;
   }
@@ -34,7 +46,9 @@ export class OutlineService {
   }
 
   async findOne(userId: string, id: string) {
-    const outline = await this.prisma.outline.findFirst({ where: { id, document: { userId } } });
+    const outline = await this.prisma.outline.findFirst({
+      where: { id, document: { userId } },
+    });
     if (!outline) throw new NotFoundException('Outline not found');
     return outline;
   }
@@ -46,7 +60,10 @@ export class OutlineService {
   }
 
   private async ensureOwnedDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }
