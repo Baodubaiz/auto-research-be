@@ -45,7 +45,7 @@ services:
 
   auto-research-prisma-studio:
     image: auto-research-be:dev
-    container_name: auto-research-prisma-studio-local
+    container_name: never
     command: ["npx", "prisma", "studio", "--port", "5555", "--browser", "none"]
     environment:
       DATABASE_URL: postgresql://postgres:postgres@auto-research-postgres:5432/autoresearch?schema=public
