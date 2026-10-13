@@ -21,8 +21,8 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 
 # 2. Check Docker Daemon Status
 try {
-    $null = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $dockerVersion = docker info --format '{{.ServerVersion}}' 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($dockerVersion)) {
         Write-Host "❌ Lỗi: Docker Desktop chưa được khởi động." -ForegroundColor Red
         Write-Host "Vui lòng bật Docker Desktop và đợi đến khi Docker Engine sẵn sàng."
         exit 1
@@ -63,13 +63,51 @@ $runningContainer = docker ps --filter "name=$BeContainer" --filter "status=runn
 
 if ($runningContainer) {
     Write-Host "------------------------------------------------------" -ForegroundColor Yellow
-    Write-Host "⚡ Container backend '$BeContainer' ĐANG CHẠY BÌNH THƯỜNG!" -ForegroundColor Green
-    Write-Host "Không khởi tạo lại Docker để tránh xung đột hoặc gián đoạn." -ForegroundColor Yellow
-    Write-Host "Backend URL : http://localhost:3001/api/v1" -ForegroundColor Cyan
-    Write-Host "Tự động mở logs theo dõi Hot Reload (Nhấn Ctrl + C để thoát xem logs)..." -ForegroundColor Cyan
+    Write-Host "Container backend '$BeContainer' dang chay." -ForegroundColor Green
     Write-Host "------------------------------------------------------" -ForegroundColor Yellow
-    docker compose -p $ProjectName -f $ComposeFile logs -f auto-research-be
-    exit 0
+    Write-Host "Chon hanh dong:" -ForegroundColor Cyan
+    Write-Host "  [1] Restart container (ap dung code moi, rebuild image)"
+    Write-Host "  [2] Chi xem logs (khong restart)"
+    Write-Host "  [3] Thoat"
+    $userChoice = Read-Host "Nhap lua chon (1/2/3) [mac dinh: 2]"
+    if ([string]::IsNullOrWhiteSpace($userChoice)) { $userChoice = "2" }
+
+    switch ($userChoice) {
+        "1" {
+            Write-Host "Dang dung container cu va rebuild..." -ForegroundColor Cyan
+            docker compose -p $ProjectName -f $ComposeFile down
+            Write-Host "Dang build va khoi dong lai..." -ForegroundColor Cyan
+            docker compose -p $ProjectName -f $ComposeFile up -d --build
+            Write-Host "Dang cho PostgreSQL va Backend khoi dong (khoang 8 giay)..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 8
+            Write-Host "Dang dong bo Prisma schema (db push)..." -ForegroundColor Cyan
+            docker compose -p $ProjectName -f $ComposeFile exec -T auto-research-be npx prisma db push
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Dong bo Prisma schema thanh cong." -ForegroundColor Green
+            } else {
+                Write-Host "Khong the dong bo schema ngay. Chay 'make db-push' sau." -ForegroundColor Yellow
+            }
+            Write-Host "Restart hoan tat. Backend URL: http://localhost:3001/api/v1" -ForegroundColor Green
+            Write-Host "Dang mo logs (Nhan Ctrl+C de thoat logs)..." -ForegroundColor Cyan
+            docker compose -p $ProjectName -f $ComposeFile logs -f auto-research-be
+            exit 0
+        }
+        "2" {
+            Write-Host "Backend URL: http://localhost:3001/api/v1" -ForegroundColor Cyan
+            Write-Host "Dang mo logs (Nhan Ctrl+C de thoat logs)..." -ForegroundColor Cyan
+            docker compose -p $ProjectName -f $ComposeFile logs -f auto-research-be
+            exit 0
+        }
+        "3" {
+            Write-Host "Thoat. Container van dang chay binh thuong." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "Lua chon khong hop le. Hien thi logs mac dinh..." -ForegroundColor Yellow
+            docker compose -p $ProjectName -f $ComposeFile logs -f auto-research-be
+            exit 0
+        }
+    }
 }
 
 # 6. Container is NOT running -> Proceed with build & start
