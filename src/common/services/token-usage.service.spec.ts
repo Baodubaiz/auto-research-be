@@ -95,7 +95,9 @@ describe('TokenUsageService', () => {
 
     it('should fallback without documentId if initial create fails with documentId', async () => {
       mockPrisma.tokenUsage.create
-        .mockRejectedValueOnce(new Error('Foreign key violation on document_id'))
+        .mockRejectedValueOnce(
+          new Error('Foreign key violation on document_id'),
+        )
         .mockResolvedValueOnce({ id: 'tu-fallback' });
 
       await service.recordUsage({
@@ -247,7 +249,9 @@ describe('TokenUsageService', () => {
 
   describe('recordUsageFromPayload', () => {
     it('should extract and record usage', async () => {
-      const spy = jest.spyOn(service, 'recordUsage').mockResolvedValue(undefined);
+      const spy = jest
+        .spyOn(service, 'recordUsage')
+        .mockResolvedValue(undefined);
 
       await service.recordUsageFromPayload({
         user_id: 'user-1',
@@ -265,7 +269,9 @@ describe('TokenUsageService', () => {
     });
 
     it('should not call recordUsage if payload has no user', async () => {
-      const spy = jest.spyOn(service, 'recordUsage').mockResolvedValue(undefined);
+      const spy = jest
+        .spyOn(service, 'recordUsage')
+        .mockResolvedValue(undefined);
 
       await service.recordUsageFromPayload({
         event_type: 'test',

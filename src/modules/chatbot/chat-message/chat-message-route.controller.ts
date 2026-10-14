@@ -12,12 +12,29 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CreateNestedChatMessageDto } from './dto/create-nested-chat-message.dto';
 import { UpdateChatMessageDto } from './dto/update-chat-message.dto';
+import { SendAiMessageDto } from './dto/send-ai-message.dto';
 import { ChatMessageService } from './chat-message.service';
+import { ChatbotAiService } from './chatbot-ai.service';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
 export class ChatMessageRouteController {
-  constructor(private readonly service: ChatMessageService) {}
+  constructor(
+    private readonly service: ChatMessageService,
+    private readonly aiService: ChatbotAiService,
+  ) {}
+
+  @Post([
+    'sessions/:sessionId/messages/ai',
+    '/chat-sessions/:sessionId/messages/ai',
+  ])
+  sendAiMessage(
+    @CurrentUser('sub') userId: string,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: SendAiMessageDto,
+  ) {
+    return this.aiService.sendMessage(userId, sessionId, dto);
+  }
 
   @Post('sessions/:sessionId/messages')
   create(

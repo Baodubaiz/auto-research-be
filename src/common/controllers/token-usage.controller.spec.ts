@@ -57,7 +57,9 @@ describe('TokenUsageController', () => {
     mockTokenUsageService.getDocumentSummary.mockResolvedValue(expected);
 
     const result = await controller.getDocumentSummary('doc-1');
-    expect(mockTokenUsageService.getDocumentSummary).toHaveBeenCalledWith('doc-1');
+    expect(mockTokenUsageService.getDocumentSummary).toHaveBeenCalledWith(
+      'doc-1',
+    );
     expect(result).toEqual(expected);
   });
 });

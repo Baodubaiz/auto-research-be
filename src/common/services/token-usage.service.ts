@@ -104,7 +104,10 @@ export class TokenUsageService {
     const inputTokens =
       payload.input_tokens ?? payload.inputTokens ?? nested.input_tokens ?? 0;
     const outputTokens =
-      payload.output_tokens ?? payload.outputTokens ?? nested.output_tokens ?? 0;
+      payload.output_tokens ??
+      payload.outputTokens ??
+      nested.output_tokens ??
+      0;
     const embedTokens =
       payload.embed_tokens ?? payload.embedTokens ?? nested.embed_tokens ?? 0;
     const webSearchCall =
