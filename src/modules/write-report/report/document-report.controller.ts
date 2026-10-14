@@ -9,7 +9,10 @@ export class DocumentReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Get(':documentId/report')
-  findByDocument(@CurrentUser('sub') userId: string, @Param('documentId') documentId: string) {
+  findByDocument(
+    @CurrentUser('sub') userId: string,
+    @Param('documentId') documentId: string,
+  ) {
     return this.reportService.findByDocument(userId, documentId);
   }
 }

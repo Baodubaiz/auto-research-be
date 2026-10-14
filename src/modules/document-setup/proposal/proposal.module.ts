@@ -3,5 +3,10 @@ import { AuthModule } from '../../auth/auth/auth.module';
 import { ProposalController } from './proposal.controller';
 import { ProposalService } from './proposal.service';
 
-@Module({ imports: [AuthModule], controllers: [ProposalController], providers: [ProposalService], exports: [ProposalService] })
+@Module({
+  imports: [AuthModule],
+  controllers: [ProposalController],
+  providers: [ProposalService],
+  exports: [ProposalService],
+})
 export class ProposalModule {}

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateDocumentKeywordDto } from './dto/create-document-keyword.dto';
 import { UpdateDocumentKeywordDto } from './dto/update-document-keyword.dto';
@@ -22,14 +26,19 @@ export class DocumentKeywordService {
   }
 
   async findOne(userId: string, id: string) {
-    const keyword = await this.prisma.documentKeyword.findFirst({ where: { id, document: { userId } } });
+    const keyword = await this.prisma.documentKeyword.findFirst({
+      where: { id, document: { userId } },
+    });
     if (!keyword) throw new NotFoundException('Document keyword not found');
     return keyword;
   }
 
   async update(userId: string, id: string, dto: UpdateDocumentKeywordDto) {
     const keyword = await this.findOne(userId, id);
-    return this.prisma.documentKeyword.update({ where: { id: keyword.id }, data: dto });
+    return this.prisma.documentKeyword.update({
+      where: { id: keyword.id },
+      data: dto,
+    });
   }
 
   async remove(userId: string, id: string) {
@@ -39,7 +48,10 @@ export class DocumentKeywordService {
   }
 
   private async ensureOwnedDocument(userId: string, documentId: string) {
-    const document = await this.prisma.document.findUnique({ where: { id: documentId, userId }, select: { id: true } });
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
     if (!document) throw new NotFoundException('Document not found');
   }
 }

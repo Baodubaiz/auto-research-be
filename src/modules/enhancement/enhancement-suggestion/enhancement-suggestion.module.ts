@@ -6,7 +6,10 @@ import { EnhancementSuggestionService } from './enhancement-suggestion.service';
 
 @Module({
   imports: [AuthModule],
-  controllers: [EnhancementSuggestionController, EnhancementSuggestionRouteController],
+  controllers: [
+    EnhancementSuggestionController,
+    EnhancementSuggestionRouteController,
+  ],
   providers: [EnhancementSuggestionService],
   exports: [EnhancementSuggestionService],
 })

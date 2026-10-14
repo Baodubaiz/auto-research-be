@@ -15,11 +15,17 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('auth.jwtSecret');
-        console.log('[AuthModule] JWT Secret loaded:', secret ? '***' + secret.slice(-10) : 'UNDEFINED');
+        console.log(
+          '[AuthModule] JWT Secret loaded:',
+          secret ? '***' + secret.slice(-10) : 'UNDEFINED',
+        );
         return {
           secret: secret || 'fallback-secret',
           signOptions: {
-            expiresIn: configService.get<string>('auth.jwtExpiresIn', '7d') as any,
+            expiresIn: configService.get<string>(
+              'auth.jwtExpiresIn',
+              '7d',
+            ) as any,
           },
         };
       },

@@ -1,4 +1,11 @@
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { ReferenceDownloadStatus } from '@prisma/client';
 
 export class CreateReferenceDto {
