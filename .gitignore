@@ -62,3 +62,4 @@ AGENTS.md
 DOCS_INDEX.md
 tasks/
 docs/completed_tasks/
+*.tsbuildinfo
