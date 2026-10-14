@@ -30,13 +30,15 @@ describe('SmokeTestController', () => {
       registerPending: jest.fn<any>(),
     };
     mockConfig = {
-      get: jest.fn<any>().mockImplementation((key: string, defaultVal?: any) => {
-        if (key === 'kafka.isLocal') return true;
-        if (key === 'kafka.topics.document_setup.request') {
-          return 'document_setup_request_local';
-        }
-        return defaultVal;
-      }),
+      get: jest
+        .fn<any>()
+        .mockImplementation((key: string, defaultVal?: any) => {
+          if (key === 'kafka.isLocal') return true;
+          if (key === 'kafka.topics.document_setup.request') {
+            return 'document_setup_request_local';
+          }
+          return defaultVal;
+        }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -70,9 +70,8 @@ export class SmokeTestController {
     });
 
     const topic =
-      this.configService.get<string>(
-        'kafka.topics.document_setup.request',
-      ) || 'document_setup_request_local';
+      this.configService.get<string>('kafka.topics.document_setup.request') ||
+      'document_setup_request_local';
 
     const timeoutMs = customTimeout ? Number(customTimeout) : 30000;
 

@@ -8,15 +8,25 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CreateReferenceDto } from './dto/create-reference.dto';
 import { UpdateReferenceDto } from './dto/update-reference.dto';
+import { SearchPapersDto } from './dto/search-papers.dto';
 import { ReferenceService } from './reference.service';
 
 @Controller('references')
 @UseGuards(JwtAuthGuard)
 export class ReferenceController {
   constructor(private readonly referenceService: ReferenceService) {}
+
+  @Post('search')
+  searchPapers(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: SearchPapersDto,
+  ) {
+    return this.referenceService.searchPapers(userId, dto);
+  }
 
   @Post()
   create(@Body() dto: CreateReferenceDto) {
