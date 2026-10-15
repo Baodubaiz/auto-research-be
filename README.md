@@ -145,22 +145,79 @@ Bạn có thể dùng lệnh `make` hoặc `npm run`:
 
 ---
 
-## 🏗️ CẤU TRÚC THƯ MỤC CHÍNH
+## 🏗️ CẤU TRÚC THƯ MỤC CHI TIẾT DỰ ÁN
 
 ```text
 auto-research-be/
-├── Dockerfile.dev             # Dockerfile tối ưu cho phát triển có Hot Reload
-├── Dockerfile                 # Multi-stage Dockerfile cho Production CI/CD
-├── docker-compose.local.yml   # Compose cho môi trường dev cục bộ
-├── Makefile                   # Tập hợp lệnh tiện ích
-├── scripts/
-│   ├── dev-setup.sh           # Script 1-click khởi chạy tự động cho Linux/macOS
-│   └── dev-setup.ps1          # Script 1-click khởi chạy tự động cho Windows
+├── README.md                  # Tài liệu hướng dẫn tổng quan dự án
+├── Makefile                   # Quản lý các lệnh Docker / DB / Dev tiện ích
+├── Jenkinsfile                # CI/CD Pipeline tự động hóa build/deploy
+├── Dockerfile                 # Multi-stage Dockerfile cho môi trường Production
+├── Dockerfile.dev             # Dockerfile tối ưu cho Dev có Hot Reload thời gian thực
+├── docker-compose.prod.yml    # Compose cho môi trường Production
+├── .env.example               # Template danh sách biến môi trường mẫu
+├── package.json               # Quản lý dependencies và scripts chạy dự án
 ├── prisma/
-│   └── schema.prisma          # Toàn bộ Database Models và Enums
+│   └── schema.prisma          # Toàn bộ Database Models (User, Document, Job, TokenUsage, v.v.)
+├── scripts/                   # Bộ scripts tiện ích tự động hóa
+│   ├── dev-setup.sh           # Script 1-click khởi chạy tự động cho Linux/macOS
+│   ├── dev-setup.ps1          # Script 1-click khởi chạy tự động cho Windows
+│   └── smoke-test-kafka.ts    # Script E2E kiểm thử kết nối trực tiếp Kafka Broker thực tế
+├── docs/                      # Tài liệu kỹ thuật dự án
+│   └── backend-cicd.md        # Hướng dẫn CI/CD Jenkins & Docker
 └── src/
+    ├── main.ts                # Entrypoint ứng dụng (CORS, ValidationPipe, Prefix api/v1)
+    ├── app.module.ts          # Root module kết nối toàn bộ hệ thống
+    ├── app.controller.ts      # Health check root
+    ├── app.service.ts         # Service root
     ├── config/                # Cấu hình tập trung (@nestjs/config)
-    ├── database/              # PrismaService & PrismaModule
-    ├── messaging/             # Apache Kafka Client & Redis Client
-    └── modules/               # Các Domain Modules nghiệp vụ
+    │   ├── configuration.ts   # Load và tổng hợp cấu hình
+    │   ├── app.config.ts      # Port, prefix, cors, body limit
+    │   ├── auth.config.ts     # JWT secret & expiration
+    │   ├── database.config.ts # DATABASE_URL
+    │   ├── kafka.config.ts    # Kafka brokers, topics (hỗ trợ suffix _local)
+    │   └── redis.config.ts    # Redis url, enabled, prefix
+    ├── database/              # Quản lý kết nối Database
+    │   ├── prisma.module.ts   # Global Prisma Module
+    │   └── prisma.service.ts  # Prisma Client lifecycle (connect/disconnect)
+    ├── common/                # Tiện ích, Guards, Services dùng chung
+    │   ├── decorators/        # Custom decorators (@CurrentUser)
+    │   ├── guards/            # Guards xác thực (JwtAuthGuard, AdminGuard)
+    │   ├── filters/           # Global exception filter (AllExceptionsFilter)
+    │   ├── services/          # AiStatusMapper, TimeoutManager, InterruptResume, TokenUsage
+    │   ├── streaming/         # StreamingManagerService (Server-Sent Events)
+    │   └── kafka/             # Kafka constants, error codes (401-673), Base DTOs
+    ├── messaging/             # Tầng Message Broker Kafka & In-memory Redis
+    │   ├── messaging.module.ts            # Khởi tạo Kafka Client và Redis Client
+    │   ├── kafka-producer.service.ts      # Producer validate 6 trường, gửi request Kafka
+    │   ├── kafka-consumer.controller.ts   # Consumer lắng nghe 4 response topics
+    │   ├── request-correlation.service.ts # Bộ điều phối ánh xạ Request-Response bất đồng bộ
+    │   └── smoke-test.controller.ts       # Endpoint dev kiểm thử thông luồng Kafka
+    └── modules/               # Các Domain Modules chính
+        ├── auth/              # Xác thực và quản lý tài khoản người dùng
+        │   ├── auth/          # Đăng nhập, Đăng ký, cấp phát JWT Bearer token
+        │   └── users/         # CRUD người dùng, Profile cá nhân, Đổi mật khẩu
+        ├── document-setup/    # Thiết lập tài liệu nghiên cứu ban đầu (DS-01 -> DS-06)
+        │   ├── document/      # Quản lý Document entity & Admin documents
+        │   ├── proposal/      # Đề xuất đề tài (Ideation: domains, subdomains, keywords, titles)
+        │   ├── document-keyword/ # Quản lý từ khóa chính, từ khóa phụ, truy vấn tìm kiếm
+        │   ├── reference/     # Tìm kiếm bài báo khoa học, Open Access, tải PDF
+        │   ├── user-uploaded-document/ # Upload PDF người dùng & vector hóa Qdrant RAG
+        │   └── outline/       # Cấu trúc đề cương và phân bổ số lượng từ mục tiêu
+        ├── write-report/      # Soạn thảo báo cáo & Phân tích dữ liệu (WR-01 -> WR-05)
+        │   ├── report/        # Nội dung markdown luận văn (SSE streaming), chuyên đề 1/2/3
+        │   ├── dataset/       # Quản lý tập dữ liệu & phân tích thống kê biến số
+        │   ├── dataset-variable/ # Khai báo biến nghiên cứu (Type, Role, Scale, Unit)
+        │   ├── proposed-method/  # Phương pháp đề xuất, mô hình, giả thuyết nghiên cứu
+        │   └── generated-slide/  # Sinh slide thuyết trình PowerPoint (.pptx)
+        ├── chatbot/           # Trợ lý AI trao đổi học thuật (CB-01 -> CB-04)
+        │   ├── chat-session/  # Quản lý phiên chat (outer, inner, writer)
+        │   └── chat-message/  # Lịch sử tin nhắn, RAG chat & Writer Agent SSE streaming
+        ├── enhancement/       # Tối ưu hóa & Nâng cấp văn bản (EN-01 -> EN-04)
+        │   ├── enhancement-session/    # Phiên cải tiến theo đoạn văn bản chọn (ai_in_doc)
+        │   └── enhancement-suggestion/ # Gợi ý sửa lỗi, viết lại, học thuật hóa, review diff
+        └── jobs/              # Quản lý tiến trình tác vụ bất đồng bộ
+            ├── dto/           # DTOs create, update, resume, status
+            ├── job.controller.ts # API theo dõi & điều khiển Job
+            └── job.service.ts    # Logic trạng thái (pending, processing, finished, suspended)
 ```
