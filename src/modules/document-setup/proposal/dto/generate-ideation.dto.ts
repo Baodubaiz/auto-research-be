@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -7,6 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateDomainsDto {
   @IsString()
@@ -24,8 +26,18 @@ export class GenerateDomainsDto {
   numberOfDomains?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  domainsNum?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isTool?: boolean = false;
+
+  @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -56,8 +68,18 @@ export class GenerateSubdomainsDto {
   numberOfSubdomains?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  subdomainsNum?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isTool?: boolean = false;
+
+  @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -73,13 +95,20 @@ export class GenerateKeywordsDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  field!: string;
+  proposalId?: string;
 
+  @IsOptional()
+  proposal?: Record<string, unknown>;
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  domain!: string;
+  field?: string;
+
+  @IsOptional()
+  @IsString()
+  domain?: string;
 
   @IsOptional()
   @IsArray()
@@ -88,7 +117,7 @@ export class GenerateKeywordsDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -124,7 +153,15 @@ export class GenerateTitlesDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  level?: string = 'bachelor';
+
+  @IsOptional()
+  @IsBoolean()
+  useWebSearch?: boolean = false;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -133,15 +170,4 @@ export class GenerateTitlesDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
-}
-
-export interface IdeationOptions {
-  userId: string;
-  documentId: string;
-  sessionId?: string;
-  eventType: string;
-  errorCode: number;
-  dto: { modelId?: string; language?: string; [key: string]: any };
-  kafkaData: Record<string, unknown>;
-  onSuccess?: (data: Record<string, unknown>) => Promise<void>;
 }

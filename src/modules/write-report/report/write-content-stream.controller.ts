@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   MessageEvent,
@@ -26,6 +27,9 @@ export class WriteContentStreamController {
   ) {
     if (paramDocId) {
       dto.documentId = paramDocId;
+    }
+    if (!dto.documentId) {
+      throw new BadRequestException('documentId is required');
     }
     return this.writeContentAiService.startWriteContent(userId, dto);
   }

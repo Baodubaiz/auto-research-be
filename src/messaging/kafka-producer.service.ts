@@ -14,6 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { KAFKA_CLIENT } from '../common/messaging.tokens';
 import { BaseKafkaRequestDto } from '../common/kafka/dto/base-kafka-request.dto';
 import { KAFKA_ERROR_CODES } from '../common/kafka/kafka.constants';
+import { sanitizeKafkaPayload } from '../common/kafka/kafka-envelope.helper';
 
 @Injectable()
 export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
@@ -68,11 +69,12 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publish<T extends object>(topic: string, payload: T): Promise<void> {
-    await this.validatePayload(payload);
+    const cleanPayload = sanitizeKafkaPayload(payload);
+    await this.validatePayload(cleanPayload);
 
     try {
-      await firstValueFrom(this.kafkaClient.emit(topic, payload));
-      const eventType = (payload as Record<string, unknown>).event_type;
+      await firstValueFrom(this.kafkaClient.emit(topic, cleanPayload));
+      const eventType = (cleanPayload as Record<string, unknown>).event_type;
       this.logger.debug(
         `Published message to topic [${topic}] for event [${String(eventType)}]`,
       );

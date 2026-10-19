@@ -9,6 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class SearchPapersDto {
   @IsString()
@@ -75,7 +76,7 @@ export class SearchPapersDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -84,4 +85,18 @@ export class SearchPapersDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
+
+  @IsOptional()
+  proposal?: {
+    title?: string;
+    problem_statement?: string;
+    problemStatement?: string;
+    motivation?: string;
+    research_gap?: string;
+    researchGap?: string;
+  };
+
+  @IsOptional()
+  @IsString()
+  proposalId?: string;
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { OutlineAiDispatcher } from './outline-ai.dispatcher';
+import { OutlineSyncHelper } from './outline-sync.helper';
 import {
   GenerateOutlineAiDto,
   GenerateOutlineWithRefsDto,
@@ -18,18 +18,18 @@ export class OutlineAiService {
 
   async generateOutline(userId: string, dto: GenerateOutlineAiDto) {
     const doc = await this.ensureDocument(userId, dto.documentId);
-    let title = dto.title || doc.title || '';
-    let problem = dto.problemStatement || '';
-
-    if (dto.proposalId) {
-      const prop = await this.prisma.proposal.findFirst({
-        where: { id: dto.proposalId, documentId: dto.documentId },
-      });
-      if (prop) {
-        title = prop.title || title;
-        problem = prop.problemStatement || problem;
-      }
-    }
+    const prop = await this.resolveSelectedProposal(dto.documentId, dto.proposalId);
+    const finalProposal = OutlineSyncHelper.resolveFinalProposal(prop, dto.finalProposal);
+    const { headings, headingsPercent, outlineCode } = OutlineSyncHelper.resolveHeadingsAndPercents(
+      dto.headings,
+      dto.headingsPercent,
+      dto.outlineCode,
+    );
+    const wordCountStr = dto.wordCountStr || `${dto.totalWordCount || 8000} words`;
+    const researchType =
+      typeof dto.researchType === 'object' && dto.researchType !== null
+        ? dto.researchType
+        : { type: 0, reason: String(dto.researchType || doc.researchType || 'quantitative') };
 
     return this.dispatcher.dispatch({
       userId,
@@ -39,31 +39,43 @@ export class OutlineAiService {
       errorCode: 617,
       dto,
       kafkaData: {
-        title,
-        problem_statement: problem,
-        total_word_count: dto.totalWordCount || 8000,
-        research_type: dto.researchType || doc.researchType || 'quantitative',
         field: dto.field || doc.field || 'General',
+        domain:
+          dto.domain ||
+          (Array.isArray(doc.domains) && doc.domains.length > 0
+            ? String(doc.domains[0])
+            : typeof (doc as any).domains === 'string' && (doc as any).domains
+              ? (doc as any).domains
+              : (doc as any).domain || 'General'),
+        research_type: researchType,
+        word_count_str: wordCountStr,
+        headings,
+        headings_percent: headingsPercent,
+        final_proposal: finalProposal,
+        outline_code: outlineCode,
       },
       onSuccess: async (data) => {
-        await this.upsertOutlineRecord(
-          dto.documentId,
-          data,
-          dto.totalWordCount,
-        );
+        await OutlineSyncHelper.syncOutlineDb(this.prisma, dto.documentId, data, {
+          headings,
+          headingsPercent,
+          outlineCode,
+          wordCountStr,
+        });
       },
     });
   }
 
   async modifyOutline(userId: string, dto: ModifyOutlineAiDto) {
-    await this.ensureDocument(userId, dto.documentId);
-    let currentOutline = dto.outline;
-    if (!currentOutline) {
-      const existing = await this.prisma.outline.findUnique({
-        where: { documentId: dto.documentId },
-      });
-      currentOutline = (existing?.structure as Record<string, unknown>) || {};
-    }
+    const doc = await this.ensureDocument(userId, dto.documentId);
+    const prop = await this.resolveSelectedProposal(dto.documentId);
+    const finalProposal = OutlineSyncHelper.resolveFinalProposal(prop, dto.finalProposal);
+    const existing = await this.prisma.outline.findUnique({ where: { documentId: dto.documentId } });
+    const currentStructure = dto.outline || (existing?.structure as Record<string, unknown>) || {};
+
+    const headings = dto.headings || (existing?.headings as any[]) || [];
+    const headingsPercent = dto.headingsPercent || (existing?.headingsPercent as number[]) || [];
+    const newHeadings = dto.newHeadings || headings;
+    const newHeadingsPercent = dto.newHeadingsPercent || headingsPercent;
 
     return this.dispatcher.dispatch({
       userId,
@@ -73,27 +85,44 @@ export class OutlineAiService {
       errorCode: 627,
       dto,
       kafkaData: {
+        field: dto.field || doc.field || 'General',
+        domain:
+          dto.domain ||
+          (Array.isArray(doc.domains) && doc.domains.length > 0
+            ? String(doc.domains[0])
+            : typeof (doc as any).domains === 'string' && (doc as any).domains
+              ? (doc as any).domains
+              : (doc as any).domain || 'General'),
+        research_type: dto.researchType || { type: 0, reason: doc.researchType || 'quantitative' },
+        final_proposal: finalProposal,
+        headings,
+        headings_percent: headingsPercent,
+        new_headings: newHeadings,
+        new_headings_percent: newHeadingsPercent,
+        outline: currentStructure,
         instruction: dto.instruction,
-        outline: currentOutline,
       },
       onSuccess: async (data) => {
-        await this.upsertOutlineRecord(dto.documentId, data);
+        await OutlineSyncHelper.syncOutlineDb(this.prisma, dto.documentId, data, {
+          headings: newHeadings,
+          headingsPercent: newHeadingsPercent,
+        });
       },
     });
   }
 
-  async generateOutlineWithRefs(
-    userId: string,
-    dto: GenerateOutlineWithRefsDto,
-  ) {
+  async generateOutlineWithRefs(userId: string, dto: GenerateOutlineWithRefsDto) {
     await this.ensureDocument(userId, dto.documentId);
-    let currentOutline = dto.outline;
-    if (!currentOutline) {
-      const existing = await this.prisma.outline.findUnique({
-        where: { documentId: dto.documentId },
-      });
-      currentOutline = (existing?.structure as Record<string, unknown>) || {};
-    }
+    const prop = await this.resolveSelectedProposal(dto.documentId);
+    const finalProposal = OutlineSyncHelper.resolveFinalProposal(prop, dto.finalProposal);
+    const existing = await this.prisma.outline.findUnique({ where: { documentId: dto.documentId } });
+    const currentOutline = dto.outline || (existing?.structure as Record<string, unknown>) || {};
+    const outlineCode = dto.outlineCode || (existing?.outlineCode as string[]) || [];
+
+    const processedDocs =
+      dto.processedDocs && dto.processedDocs.length > 0
+        ? dto.processedDocs
+        : await OutlineSyncHelper.loadProcessedDocs(this.prisma, dto.documentId, dto.referenceIds);
 
     return this.dispatcher.dispatch({
       userId,
@@ -104,16 +133,22 @@ export class OutlineAiService {
       dto,
       kafkaData: {
         outline: currentOutline,
-        reference_ids: dto.referenceIds ?? [],
+        outline_code: outlineCode,
+        final_proposal: finalProposal,
+        processed_docs: processedDocs,
       },
       onSuccess: async (data) => {
-        await this.upsertOutlineRecord(dto.documentId, data);
+        await OutlineSyncHelper.syncOutlineDb(this.prisma, dto.documentId, data);
       },
     });
   }
 
   async updateUserRefs(userId: string, dto: UpdateUserRefsDto) {
     await this.ensureDocument(userId, dto.documentId);
+    const documents =
+      dto.documents && dto.documents.length > 0
+        ? dto.documents
+        : await OutlineSyncHelper.loadProcessedDocs(this.prisma, dto.documentId, dto.referenceIds);
 
     return this.dispatcher.dispatch({
       userId,
@@ -122,22 +157,19 @@ export class OutlineAiService {
       eventType: 'update_user_refs',
       errorCode: 628,
       dto,
-      kafkaData: {
-        reference_ids: dto.referenceIds,
-      },
+      kafkaData: { documents },
       onSuccess: async () => {
-        for (const refId of dto.referenceIds) {
-          const exists = await this.prisma.documentReference.findUnique({
-            where: {
-              documentId_referenceId: {
-                documentId: dto.documentId,
-                referenceId: refId,
+        if (dto.referenceIds && dto.referenceIds.length > 0) {
+          for (const refId of dto.referenceIds) {
+            await this.prisma.documentReference.upsert({
+              where: {
+                documentId_referenceId: {
+                  documentId: dto.documentId,
+                  referenceId: refId,
+                },
               },
-            },
-          });
-          if (!exists) {
-            await this.prisma.documentReference.create({
-              data: { documentId: dto.documentId, referenceId: refId },
+              update: {},
+              create: { documentId: dto.documentId, referenceId: refId },
             });
           }
         }
@@ -151,26 +183,13 @@ export class OutlineAiService {
     return doc;
   }
 
-  private async upsertOutlineRecord(
-    docId: string,
-    data: Record<string, unknown>,
-    fallbackCount?: number,
-  ) {
-    const struct = data.outline || data.structure || data;
-    const count = Number(
-      data.total_word_count || data.totalWordCount || fallbackCount || 8000,
-    );
-    await this.prisma.outline.upsert({
-      where: { documentId: docId },
-      update: {
-        totalWordCount: count,
-        structure: struct as Prisma.InputJsonValue,
-      },
-      create: {
-        documentId: docId,
-        totalWordCount: count,
-        structure: struct as Prisma.InputJsonValue,
-      },
+  private async resolveSelectedProposal(documentId: string, proposalId?: string) {
+    if (proposalId) {
+      return this.prisma.proposal.findFirst({ where: { id: proposalId, documentId } });
+    }
+    const selected = await this.prisma.proposal.findFirst({
+      where: { documentId, isSelected: true },
     });
+    return selected || this.prisma.proposal.findFirst({ where: { documentId } });
   }
 }

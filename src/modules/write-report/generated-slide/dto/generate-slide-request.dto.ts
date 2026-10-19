@@ -27,6 +27,10 @@ export class GenerateSlideRequestDto {
 
   @IsOptional()
   @IsString()
+  sessionId?: string;
+
+  @IsOptional()
+  @IsString()
   rawReport?: string;
 
   @IsOptional()

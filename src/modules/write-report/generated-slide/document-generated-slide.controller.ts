@@ -5,6 +5,7 @@ import {
   MessageEvent,
   Param,
   Post,
+  Query,
   Sse,
   UseGuards,
 } from '@nestjs/common';
@@ -53,7 +54,8 @@ export class DocumentGeneratedSlideController {
   stream(
     @CurrentUser('sub') userId: string,
     @Param('documentId') documentId: string,
+    @Query('sessionId') sessionId?: string,
   ): Promise<Observable<MessageEvent>> {
-    return this.aiService.getSlideStream(userId, documentId);
+    return this.aiService.getSlideStream(userId, documentId, sessionId);
   }
 }

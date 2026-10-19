@@ -35,15 +35,13 @@ describe('UserUploadedDocumentAiService', () => {
       document: { findFirst: jest.fn<any>() },
       userUploadedDocument: {
         findFirst: jest.fn<any>(),
+        findMany: jest.fn<any>(),
         update: jest.fn<any>(),
         delete: jest.fn<any>(),
         count: jest.fn<any>(),
       },
     };
-
-    mockDispatcher = {
-      dispatch: jest.fn<any>(),
-    };
+    mockDispatcher = { dispatch: jest.fn<any>() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -90,29 +88,17 @@ describe('UserUploadedDocumentAiService', () => {
       const res = await service.processDocument(userId, fileId, dto);
       expect(res.status).toBe(FileProcessingStatus.embedded);
       expect(res.isEmbedded).toBe(true);
-
-      // Verify parse dispatch
       expect(mockDispatcher.dispatch).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining({
-          eventType: 'user_documents',
-          errorCode: 620,
-        }),
+        expect.objectContaining({ eventType: 'user_documents', errorCode: 620 }),
       );
-      // Verify embed dispatch
       expect(mockDispatcher.dispatch).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({
-          eventType: 'embed_user_documents',
-          errorCode: 621,
-        }),
+        expect.objectContaining({ eventType: 'embed_user_documents', errorCode: 621 }),
       );
       expect(mockPrisma.userUploadedDocument.update).toHaveBeenCalledWith({
         where: { id: fileId },
-        data: {
-          processingStatus: FileProcessingStatus.embedded,
-          isEmbedded: true,
-        },
+        data: { processingStatus: FileProcessingStatus.embedded, isEmbedded: true },
       });
     });
 
@@ -173,10 +159,7 @@ describe('UserUploadedDocumentAiService', () => {
       );
       expect(mockPrisma.userUploadedDocument.update).toHaveBeenCalledWith({
         where: { id: fileId },
-        data: {
-          processingStatus: FileProcessingStatus.embedded,
-          isEmbedded: true,
-        },
+        data: { processingStatus: FileProcessingStatus.embedded, isEmbedded: true },
       });
     });
   });
@@ -190,7 +173,7 @@ describe('UserUploadedDocumentAiService', () => {
 
     it('should throw BadRequestException if no documents are embedded yet', async () => {
       mockPrisma.document.findFirst.mockResolvedValue({ id: documentId });
-      mockPrisma.userUploadedDocument.count.mockResolvedValue(0);
+      mockPrisma.userUploadedDocument.findMany.mockResolvedValue([]);
 
       await expect(
         service.searchUploadedDocuments(userId, dto),
@@ -199,22 +182,25 @@ describe('UserUploadedDocumentAiService', () => {
 
     it('should dispatch search_user_documents and return chunks when documents are embedded', async () => {
       mockPrisma.document.findFirst.mockResolvedValue({ id: documentId });
-      mockPrisma.userUploadedDocument.count.mockResolvedValue(2);
+      mockPrisma.userUploadedDocument.findMany.mockResolvedValue([
+        { fileName: 'paper1.pdf' },
+      ]);
       mockDispatcher.dispatch.mockResolvedValue({
         chunks: [{ text: 'Deep learning chunk', score: 0.95 }],
       });
 
       const res = await service.searchUploadedDocuments(userId, dto);
-      expect(res.chunks).toHaveLength(1);
+      expect((res as any).chunks).toHaveLength(1);
       expect(mockDispatcher.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: 'search_user_documents',
           errorCode: 625,
-          kafkaData: {
+          kafkaData: expect.objectContaining({
             document_id: documentId,
             query: 'deep learning architecture',
             top_k: 3,
-          },
+            documents: [{ url: 'paper1.pdf', name: 'paper1.pdf' }],
+          }),
         }),
       );
     });
@@ -235,12 +221,31 @@ describe('UserUploadedDocumentAiService', () => {
         expect.objectContaining({
           eventType: 'delete_documents',
           errorCode: 622,
-          kafkaData: { file_id: fileId, document_id: documentId },
+          kafkaData: {
+            collection: `${documentId}_user`,
+            documents: [{ uuids: [fileId] }],
+            data_id: fileId,
+          },
         }),
       );
       expect(mockPrisma.userUploadedDocument.delete).toHaveBeenCalledWith({
         where: { id: fileId },
       });
+    });
+  });
+
+  describe('admin & guide documents', () => {
+    it('should dispatch admin_documents and user_guide_documents', async () => {
+      mockDispatcher.dispatch.mockResolvedValue({ success: true });
+      await service.adminDocuments(userId, [{ url: 'http://pdf' }]);
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'admin_documents', errorCode: 618 }),
+      );
+
+      await service.userGuideDocuments(userId, ['http://guide']);
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'user_guide_documents', errorCode: 619 }),
+      );
     });
   });
 });

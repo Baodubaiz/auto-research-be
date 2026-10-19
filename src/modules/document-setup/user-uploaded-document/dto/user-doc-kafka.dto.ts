@@ -54,6 +54,9 @@ export class TriggerEmbedDocDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  processedDocs?: any[];
 }
 
 export class SearchUploadedDocsDto {

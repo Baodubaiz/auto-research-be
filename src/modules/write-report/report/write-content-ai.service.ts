@@ -1,12 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JobStatus, ModuleType, Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
 import { StreamingManagerService } from '../../../common/streaming/streaming-manager.service';
 import { WriteContentRequestDto } from './dto/write-content-request.dto';
 import { WriteContentHelper } from './write-content.helper';
+import { WriteContentMongoHelper } from './write-content-mongo.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
 
 @Injectable()
@@ -22,13 +24,26 @@ export class WriteContentAiService {
   ) {}
 
   async startWriteContent(userId: string, dto: WriteContentRequestDto) {
-    await this.ensureOwnedDocument(userId, dto.documentId);
+    const doc = await this.ensureOwnedDocument(userId, dto.documentId);
+    const eventType = dto.eventType || 'write_content';
+    const errorCode = eventType === 'chuyen_de_1' ? 632 : eventType === 'chuyen_de_2' ? 633 : 630;
+
+    const threadId = dto.threadId || randomUUID();
+    const sessionId = dto.sessionId || randomUUID();
+    const resolved = await WriteContentHelper.resolveWritePayload(this.prisma, dto, doc);
+    const mongoDocId = WriteContentMongoHelper.toMongoDocId(dto.documentId);
+    await WriteContentMongoHelper.ensureMongoReady(
+      mongoDocId,
+      (resolved.papersSearch || []) as Array<{ title?: string; abstract?: string; [key: string]: unknown }>,
+      resolved.outline,
+    );
 
     const job = await this.prisma.job.create({
       data: {
         module: ModuleType.write_report,
-        action: 'write_content',
+        action: eventType,
         documentId: dto.documentId,
+        threadId,
         status: JobStatus.pending,
         payload: dto as unknown as Prisma.InputJsonValue,
       },
@@ -37,34 +52,48 @@ export class WriteContentAiService {
     const streamKey = this.streamingManager.buildStreamKey({
       userId,
       documentId: dto.documentId,
-      eventType: 'write_content',
+      eventType,
     });
-
     const corrKey = this.correlation.buildCorrelationKey({
       userId,
-      documentId: dto.documentId,
-      eventType: 'write_content',
+      documentId: mongoDocId,
+      sessionId,
+      eventType,
     });
 
-    const streamObservable =
-      this.correlation.getStreamObservable<Record<string, unknown>>(corrKey);
-    const pendingPromise = this.correlation.registerPending<
-      Record<string, unknown>
-    >(corrKey, 1500000, 'write_content', job.id);
+    const streamObservable = this.correlation.getStreamObservable<Record<string, unknown>>(corrKey);
+    const pendingPromise = this.correlation.registerPending<Record<string, unknown>>(
+      corrKey,
+      1500000,
+      eventType,
+      job.id,
+    );
 
     const payload = {
-      event_type: 'write_content',
+      event_type: eventType,
+      model_id: dto.modelId || 'gemini-3.5-flash-lite',
       user_id: userId,
-      document_id: dto.documentId,
-      field: dto.field,
-      domain: dto.domain,
-      references_style: dto.referencesStyle || 'APA',
-      final_proposal: dto.finalProposal,
-      papers_search: dto.papersSearch || [],
-      outline: dto.outline,
-      outline_code: dto.outlineCode || 'all',
-      model_id: dto.modelId || 'localhost',
+      document_id: mongoDocId,
+      session_id: sessionId,
       language: dto.language || 'vi',
+      field: resolved.field,
+      domain: resolved.domain,
+      references_style: dto.referencesStyle || 'APA',
+      final_proposal: resolved.finalProposal,
+      papers_search: resolved.papersSearch,
+      outline: resolved.outline,
+      outline_code: resolved.outlineCode,
+      thread_id: threadId,
+      db: 'redis',
+      retry: 2,
+      use_web_search: dto.useWebSearch ?? false,
+      resume: dto.resume ?? false,
+      resume_error: dto.resumeError ?? false,
+      resume_method: dto.resumeMethod ?? false,
+      resumeCharacter: dto.resumeCharacter ?? false,
+      analyze_log: dto.analyzeLog,
+      detailed_logs: dto.detailedLogs,
+      generated_files: dto.generatedFiles,
       job_id: job.id,
     };
 
@@ -80,56 +109,50 @@ export class WriteContentAiService {
       });
     } catch (publishErr) {
       this.correlation.clearPending(corrKey, (publishErr as Error).message);
-      return WriteContentHelper.failJob(
-        this.prisma,
-        job.id,
-        630,
-        getAiErrorMessage(630),
-      );
+      return WriteContentHelper.failJob(this.prisma, job.id, errorCode, getAiErrorMessage(errorCode));
     }
 
     const sectionsMap = new Map<string, string>();
+    let hasResumed = false;
     const subscription = streamObservable.subscribe({
       next: async (chunk: Record<string, unknown>) => {
         try {
-          const markdown = WriteContentHelper.extractMarkdown(
-            sectionsMap,
-            chunk,
-          );
-          if (markdown) {
-            await this.prisma.report.upsert({
-              where: { documentId: dto.documentId },
-              update: { contentMarkdown: markdown },
-              create: { documentId: dto.documentId, contentMarkdown: markdown },
+          if (chunk.disable_edit !== undefined && chunk.section && !hasResumed) {
+            hasResumed = true;
+            this.logger.log(`Reached chapter breakpoint for ${(chunk.section as Record<string, unknown>).section_code}, auto-resuming...`);
+            const resumePayload = {
+              ...payload,
+              session_id: randomUUID(),
+              resume: false,
+              resumeCharacter: true,
+            };
+            void this.kafkaProducer.publish(topic, resumePayload).catch((err: Error) => {
+              this.logger.error(`Failed to publish auto-resume: ${err.message}`);
             });
+            return;
           }
 
-          if (chunk.has_finished === true) {
-            await this.prisma.job.update({
-              where: { id: job.id },
-              data: {
-                status: JobStatus.finished,
-                result: chunk as unknown as Prisma.InputJsonValue,
-              },
-            });
+          this.streamingManager.emitChunk(streamKey, chunk);
+          const res = await WriteContentHelper.handleChunk(
+            this.prisma,
+            job.id,
+            chunk,
+            sectionsMap,
+            dto.documentId,
+          );
+          if (res.isFinished || res.isSuspended) {
             this.streamingManager.completeStream(streamKey);
             subscription.unsubscribe();
           }
         } catch (err) {
-          this.logger.error(
-            `Error saving write_content section: ${(err as Error).message}`,
-          );
+          this.logger.error(`Error handling streaming chunk: ${(err as Error).message}`);
         }
       },
       error: async (err: unknown) => {
-        const errorMsg = (err as Error)?.message || getAiErrorMessage(630);
+        const errorMsg = (err as Error)?.message || getAiErrorMessage(errorCode);
         await this.prisma.job.update({
           where: { id: job.id },
-          data: {
-            status: JobStatus.error,
-            errorCode: '630',
-            errorMessage: errorMsg,
-          },
+          data: { status: JobStatus.error, errorCode: String(errorCode), errorMessage: errorMsg },
         });
         this.streamingManager.destroyStream(streamKey);
         subscription.unsubscribe();
@@ -137,41 +160,33 @@ export class WriteContentAiService {
     });
 
     void pendingPromise.catch(async (err: unknown) => {
-      const code = (err as Record<string, unknown>)?.error_code || '630';
+      const code = (err as Record<string, unknown>)?.error_code || errorCode;
       const msg =
         (err as Record<string, unknown>)?.error ||
         (err as Error)?.message ||
-        getAiErrorMessage(630);
+        getAiErrorMessage(errorCode);
 
       await this.prisma.job.update({
         where: { id: job.id },
-        data: {
-          status: JobStatus.error,
-          errorCode: String(code),
-          errorMessage: String(msg),
-        },
+        data: { status: JobStatus.error, errorCode: String(code), errorMessage: String(msg) },
       });
       this.streamingManager.destroyStream(streamKey);
       subscription.unsubscribe();
     });
 
-    return { jobId: job.id, streamKey, status: 'started' };
+    return { jobId: job.id, streamKey, threadId, status: 'started' };
   }
 
-  async getWriteStream(userId: string, documentId: string) {
+  async getWriteStream(userId: string, documentId: string, eventType = 'write_content') {
     await this.ensureOwnedDocument(userId, documentId);
-    const streamKey = this.streamingManager.buildStreamKey({
-      userId,
-      documentId,
-      eventType: 'write_content',
-    });
+    const streamKey = this.streamingManager.buildStreamKey({ userId, documentId, eventType });
     return this.streamingManager.createStream(streamKey, 1500000);
   }
 
   async ensureOwnedDocument(userId: string, documentId: string) {
     const doc = await this.prisma.document.findUnique({
       where: { id: documentId, userId },
-      select: { id: true },
+      select: { id: true, title: true, field: true, domains: true },
     });
     if (!doc) throw new NotFoundException('Document not found');
     return doc;

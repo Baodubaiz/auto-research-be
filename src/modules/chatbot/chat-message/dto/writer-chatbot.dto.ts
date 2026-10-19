@@ -1,4 +1,12 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class WriterChatbotDto {
   @IsString()
@@ -46,6 +54,41 @@ export class StartWriterAgentDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsString()
+  chatHistory?: string;
+
+  @IsOptional()
+  @IsObject()
+  summary?: Record<string, unknown>;
+
+  @IsOptional()
+  outline?: string | Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  domain?: string;
+
+  @IsOptional()
+  @IsString()
+  field?: string;
+
+  @IsOptional()
+  @IsArray()
+  notes?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  useWebSearch?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  maxResearchIterations?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeError?: boolean;
 }
 
 export class ResumeWriterAgentDto {

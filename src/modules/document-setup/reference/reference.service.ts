@@ -21,6 +21,7 @@ import {
   PaperItemDto,
   SearchPapersResponseDto,
 } from './dto/search-papers-response.dto';
+import { ReferenceSyncHelper } from './reference-sync.helper';
 
 @Injectable()
 export class ReferenceService {
@@ -60,9 +61,17 @@ export class ReferenceService {
     userId: string,
     dto: SearchPapersDto,
   ): Promise<SearchPapersResponseDto> {
-    await this.ensureDocument(userId, dto.documentId);
-
+    const doc = await this.ensureDocument(userId, dto.documentId);
     const sessionId = dto.sessionId || `sess-search-${randomUUID()}`;
+    let proposal = await ReferenceSyncHelper.resolveProposal(this.prisma, dto);
+    if (!proposal && !dto.isTool) {
+      proposal = {
+        title: doc.title || 'Research',
+        problem_statement: '',
+        motivation: '',
+        research_gap: '',
+      };
+    }
 
     const job = await this.prisma.job.create({
       data: {
@@ -75,28 +84,14 @@ export class ReferenceService {
       },
     });
 
-    const payload = {
-      event_type: 'search_papers',
-      model_id: dto.modelId || 'localhost',
-      user_id: userId,
-      document_id: dto.documentId,
-      session_id: sessionId,
-      language: dto.language || 'vi',
-      field: dto.field,
-      domain: dto.domain,
-      subdomains: dto.subdomains ?? [],
-      query: dto.query,
-      country_filter: dto.countryFilter || 'both',
-      oa_filter: dto.oaFilter ?? false,
-      is_oa: dto.isOa ?? false,
-      is_tool: dto.isTool ?? false,
-      downloaded_papers: dto.downloadedPapers ?? [],
-      cut_off_year_low: dto.cutOffYearLow,
-      cut_off_year_high: dto.cutOffYearHigh,
-      search_range: dto.searchRange || 'all',
-      use_web_search: dto.useWebSearch ?? false,
-      job_id: job.id,
-    };
+    const payload = ReferenceSyncHelper.buildSearchPayload(
+      userId,
+      sessionId,
+      dto,
+      doc,
+      proposal,
+      job.id,
+    );
 
     const correlationKey = this.correlationService.buildCorrelationKey({
       userId,
@@ -148,6 +143,12 @@ export class ReferenceService {
         ? (rawPapers as PaperItemDto[])
         : [];
 
+      await ReferenceSyncHelper.syncFoundPapers(
+        this.prisma,
+        dto.documentId,
+        papers,
+      );
+
       await this.prisma.job.update({
         where: { id: job.id },
         data: {
@@ -159,29 +160,9 @@ export class ReferenceService {
         },
       });
 
-      return {
-        jobId: job.id,
-        sessionId,
-        papers,
-        total: papers.length,
-      };
+      return { jobId: job.id, sessionId, papers, total: papers.length };
     } catch (err: unknown) {
-      let errorCode = 610;
-      let errorMessage = getAiErrorMessage(610);
-
-      if (err && typeof err === 'object') {
-        const errObj = err as Record<string, unknown>;
-        if (errObj.error_code) {
-          errorCode = Number(errObj.error_code);
-          errorMessage =
-            typeof errObj.error === 'string'
-              ? errObj.error
-              : getAiErrorMessage(errorCode);
-        } else if (typeof errObj.message === 'string') {
-          errorMessage = errObj.message;
-        }
-      }
-
+      const { errorCode, errorMessage } = ReferenceSyncHelper.parseSearchError(err);
       await this.prisma.job.update({
         where: { id: job.id },
         data: {
@@ -200,13 +181,40 @@ export class ReferenceService {
     }
   }
 
+  async getJournals(lastUpdated?: number) {
+    const sessionId = `sess-journal-${randomUUID()}`;
+    const topic =
+      this.configService.get<string>('kafka.topics.document_setup.request') ||
+      'document_setup_request_local';
+    const correlationKey = this.correlationService.buildCorrelationKey({
+      userId: 'system',
+      documentId: 'system',
+      sessionId,
+      eventType: 'get_journals',
+    });
+    const pending = this.correlationService.registerPending<Record<string, unknown>>(
+      correlationKey,
+      60000,
+      'get_journals',
+    );
+    await this.kafkaProducer.publish(topic, {
+      event_type: 'get_journals',
+      last_updated: lastUpdated || Date.now(),
+      session_id: sessionId,
+      user_id: 'system',
+      document_id: 'system',
+    });
+    return pending;
+  }
+
   private async ensureDocument(userId: string, documentId: string) {
     const document = await this.prisma.document.findFirst({
       where: { id: documentId, userId },
-      select: { id: true },
+      select: { id: true, title: true, field: true, domains: true, subdomains: true },
     });
     if (!document) {
       throw new NotFoundException('Document not found');
     }
+    return document;
   }
 }

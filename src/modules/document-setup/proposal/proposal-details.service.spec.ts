@@ -22,11 +22,7 @@ describe('ProposalDetailsService', () => {
   beforeEach(async () => {
     mockPrisma = {
       document: { findFirst: jest.fn<any>(), update: jest.fn<any>() },
-      proposal: {
-        findFirst: jest.fn<any>(),
-        create: jest.fn<any>(),
-        update: jest.fn<any>(),
-      },
+      proposal: { findFirst: jest.fn<any>(), findUnique: jest.fn<any>(), create: jest.fn<any>(), update: jest.fn<any>() },
     };
     mockDispatcher = { dispatch: jest.fn<any>() };
 
@@ -85,6 +81,7 @@ describe('ProposalDetailsService', () => {
         data: {
           problemStatement: 'High fraud rate',
           motivation: 'Reduce fraud with AI',
+          researchGap: '',
         },
       });
     });
@@ -103,12 +100,7 @@ describe('ProposalDetailsService', () => {
 
       await service.generateTitleDescription(userId, dto);
       expect(mockPrisma.proposal.create).toHaveBeenCalledWith({
-        data: {
-          documentId,
-          title: 'AI in Banking',
-          problemStatement: 'P',
-          motivation: 'M',
-        },
+        data: { documentId, title: 'AI in Banking', problemStatement: 'P', motivation: 'M', researchGap: '' },
       });
     });
 
@@ -129,7 +121,7 @@ describe('ProposalDetailsService', () => {
       });
       expect(mockPrisma.proposal.update).toHaveBeenCalledWith({
         where: { id: 'prop-target' },
-        data: { problemStatement: 'P', motivation: 'M' },
+        data: { problemStatement: 'P', motivation: 'M', researchGap: '' },
       });
     });
 
@@ -214,6 +206,7 @@ describe('ProposalDetailsService', () => {
           title: 'Mixed Title 1',
           problemStatement: 'Problem 1',
           motivation: 'Motiv 1',
+          researchGap: null,
         },
       });
     });
@@ -238,7 +231,7 @@ describe('ProposalDetailsService', () => {
       });
 
       const res = await service.getResearchType(userId, dto);
-      expect(res.research_type).toBe('quantitative');
+      expect((res as any).research_type).toBe('quantitative');
       expect(mockDispatcher.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: 'get_research_type',

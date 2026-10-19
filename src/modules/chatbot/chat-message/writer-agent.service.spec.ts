@@ -38,6 +38,9 @@ describe('WriterAgentService', () => {
   beforeEach(async () => {
     mockPrisma = {
       chatSession: { findFirst: jest.fn<any>() },
+      chatMessage: { findMany: jest.fn<any>().mockResolvedValue([]) },
+      outline: { findUnique: jest.fn<any>().mockResolvedValue(null) },
+      document: { findUnique: jest.fn<any>().mockResolvedValue(null) },
       job: {
         create: jest.fn<any>().mockResolvedValue({ id: 'job-w-1' }),
         update: jest.fn<any>().mockResolvedValue({}),

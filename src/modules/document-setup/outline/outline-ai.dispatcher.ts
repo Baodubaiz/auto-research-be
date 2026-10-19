@@ -10,6 +10,7 @@ import {
   getAiErrorName,
 } from '../../../common/constants/ai-error-codes';
 import { OutlineAiDispatchOptions } from './dto/outline-ai.dto';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class OutlineAiDispatcher {
@@ -35,7 +36,7 @@ export class OutlineAiDispatcher {
 
     const payload = {
       event_type: opt.eventType,
-      model_id: opt.dto.modelId || 'localhost',
+      model_id: opt.dto.modelId || DEFAULT_AI_MODEL,
       user_id: opt.userId,
       document_id: opt.documentId,
       session_id: sessionId,

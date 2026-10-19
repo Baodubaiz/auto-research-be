@@ -21,15 +21,9 @@ describe('ProposalIdeationService', () => {
 
   beforeEach(async () => {
     mockPrisma = {
-      document: {
-        findFirst: jest.fn<any>(),
-        update: jest.fn<any>(),
-      },
-      documentKeyword: {
-        findFirst: jest.fn<any>(),
-        create: jest.fn<any>(),
-        update: jest.fn<any>(),
-      },
+      document: { findFirst: jest.fn<any>(), update: jest.fn<any>() },
+      documentKeyword: { findFirst: jest.fn<any>(), create: jest.fn<any>(), update: jest.fn<any>() },
+      proposal: { findFirst: jest.fn<any>(), findUnique: jest.fn<any>(), create: jest.fn<any>(), update: jest.fn<any>() },
     };
 
     mockDispatcher = {
@@ -90,10 +84,11 @@ describe('ProposalIdeationService', () => {
         expect.objectContaining({
           eventType: 'generate_domains',
           errorCode: 611,
-          kafkaData: {
+          kafkaData: expect.objectContaining({
             field: 'Economics',
             number_of_domains: 3,
-          },
+            domains_num: 3,
+          }),
         }),
       );
       expect(mockPrisma.document.update).toHaveBeenCalledWith({
@@ -138,11 +133,12 @@ describe('ProposalIdeationService', () => {
         expect.objectContaining({
           eventType: 'generate_subdomains',
           errorCode: 612,
-          kafkaData: {
+          kafkaData: expect.objectContaining({
             field: 'Computer Science',
             domain: 'AI',
             number_of_subdomains: 4,
-          },
+            subdomains_num: 4,
+          }),
         }),
       );
     });

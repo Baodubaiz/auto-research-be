@@ -11,6 +11,7 @@ import { WriteReportModule } from './modules/write-report/write-report.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { EnhancementModule } from './modules/enhancement/enhancement.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { HealthCheckModule } from './modules/health-check/health-check.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     ChatbotModule,
     EnhancementModule,
     JobsModule,
+    HealthCheckModule,
   ],
   controllers: [AppController],
   providers: [AppService],

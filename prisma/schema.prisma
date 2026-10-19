@@ -195,6 +195,12 @@ model Proposal {
   title            String
   problemStatement String?  @map("problem_statement") @db.Text
   motivation       String?  @db.Text
+  researchGap      String?  @map("research_gap") @db.Text
+  finalModel       Json?    @map("final_model")
+  hypothesis       Json?
+  variables        Json?
+  surveyQuestions  Json?    @map("survey_questions")
+  questions        Json?
   isSelected       Boolean  @default(false) @map("is_selected")
   createdAt        DateTime @default(now()) @map("created_at")
 
@@ -230,6 +236,9 @@ model Reference {
   downloadedStatus ReferenceDownloadStatus @default(pending) @map("downloaded_status")
   url              String?                 @db.Text
   abstract         String?                 @db.Text
+  q                String?                 @map("q")
+  citation         Int?                    @default(0) @map("citation")
+  userLanguageTitle String?                @map("user_language_title") @db.Text
   createdAt        DateTime                @default(now()) @map("created_at")
 
   documentReferences DocumentReference[]
@@ -263,12 +272,16 @@ model UserUploadedDocument {
 }
 
 model Outline {
-  id             String   @id @default(uuid())
-  documentId     String   @unique @map("document_id")
-  totalWordCount Int      @default(0) @map("total_word_count")
-  structure      Json
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  documentId      String   @unique @map("document_id")
+  totalWordCount  Int      @default(0) @map("total_word_count")
+  structure       Json
+  outlineCode     Json?    @map("outline_code")
+  wordCountStr    String?  @map("word_count_str")
+  headings        Json?
+  headingsPercent Json?    @map("headings_percent")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
@@ -283,6 +296,8 @@ model Report {
   id              String   @id @default(uuid())
   documentId      String   @unique @map("document_id")
   contentMarkdown String?  @map("content_markdown") @db.Text
+  referencesStyle String?  @map("references_style")
+  targetLanguage  String?  @map("target_language")
   version         Int      @default(1)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
@@ -301,6 +316,9 @@ model Dataset {
   analysisMode    AnalysisMode @default(Auto) @map("analysis_mode")
   feedback        String?      @db.Text
   analysisResults Json?        @map("analysis_results")
+  analyzeLog      String?      @map("analyze_log") @db.Text
+  detailedLogs    Json?        @map("detailed_logs")
+  generatedFiles  Json?        @map("generated_files")
   createdAt       DateTime     @default(now()) @map("created_at")
 
   document  Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -334,6 +352,7 @@ model ProposedMethod {
   hypotheses       Json?
   variables        Json?
   surveyQuestions  Json?    @map("survey_questions")
+  questions        Json?
   isAccepted       Boolean  @default(false) @map("is_accepted")
   createdAt        DateTime @default(now()) @map("created_at")
 
@@ -349,6 +368,7 @@ model GeneratedSlide {
   manualMode   Boolean     @default(false) @map("manual_mode")
   language     String?
   pptxUrl      String?     @map("pptx_url") @db.Text
+  slidesJson   Json?       @map("slides_json")
   status       SlideStatus @default(generating)
   progressStep String?     @map("progress_step")
   createdAt    DateTime    @default(now()) @map("created_at")
@@ -371,13 +391,16 @@ model ChatSession {
   language   String?
   model      String?
   webSearchEnabled Boolean? @map("web_search_enabled")
+  convId      String?  @unique @map("conv_id")
+  threadId    String?  @map("thread_id")
+  templateKey String?  @map("template_key")
+  summary     Json?
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   document Document?     @relation(fields: [documentId], references: [id], onDelete: Cascade)
   messages ChatMessage[]
-  jobs     Job[]
 
   @@map("chat_sessions")
 }
@@ -437,6 +460,8 @@ model Job {
   action       String
   documentId   String?    @map("document_id")
   sessionId    String?    @map("session_id")
+  threadId     String?    @map("thread_id")
+  convId       String?    @map("conv_id")
   status       JobStatus  @default(pending)
   resumeStep   String?    @map("resume_step")
   payload      Json?
@@ -447,7 +472,6 @@ model Job {
   updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
 
   document Document?    @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  session  ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("jobs")
 }

@@ -28,8 +28,9 @@ export class UserUploadedDocumentAiService {
     const file = await this.ensureOwnedFile(userId, fileId);
     await this.updateStatus(file.id, FileProcessingStatus.processing);
 
+    const fileUrl = dto.fileUrl || file.fileName;
     // Bước 1: Bóc tách tài liệu (user_documents - lỗi 620)
-    await this.dispatcher.dispatch({
+    const parseResult = await this.dispatcher.dispatch({
       userId,
       documentId: file.documentId,
       sessionId: dto.sessionId,
@@ -38,12 +39,19 @@ export class UserUploadedDocumentAiService {
       dto,
       kafkaData: {
         file_id: file.id,
-        file_url: dto.fileUrl || file.fileName,
+        file_url: fileUrl,
+        documents: [{ url: fileUrl, name: file.fileName }],
       },
       onError: async () => {
         await this.updateStatus(file.id, FileProcessingStatus.error);
       },
     });
+
+    const resObj = parseResult as Record<string, unknown>;
+    const processedDocs = (resObj?.processed_docs ||
+      (resObj?.data as Record<string, unknown>)?.processed_docs ||
+      resObj?.data ||
+      []) as unknown[];
 
     // Bước 2: Vector hóa tài liệu (embed_user_documents - lỗi 621)
     const embedResult = await this.dispatcher.dispatch({
@@ -56,6 +64,7 @@ export class UserUploadedDocumentAiService {
       kafkaData: {
         file_id: file.id,
         document_id: file.documentId,
+        processed_docs: processedDocs,
       },
       onError: async () => {
         await this.updateStatus(file.id, FileProcessingStatus.error);
@@ -87,6 +96,7 @@ export class UserUploadedDocumentAiService {
   ) {
     const file = await this.ensureOwnedFile(userId, fileId);
     await this.updateStatus(file.id, FileProcessingStatus.processing);
+    const fileUrl = dto.fileUrl || file.fileName;
 
     return this.dispatcher.dispatch({
       userId,
@@ -97,7 +107,8 @@ export class UserUploadedDocumentAiService {
       dto,
       kafkaData: {
         file_id: file.id,
-        file_url: dto.fileUrl || file.fileName,
+        file_url: fileUrl,
+        documents: [{ url: fileUrl, name: file.fileName }],
       },
       onError: async () => {
         await this.updateStatus(file.id, FileProcessingStatus.error);
@@ -123,6 +134,7 @@ export class UserUploadedDocumentAiService {
       kafkaData: {
         file_id: file.id,
         document_id: file.documentId,
+        processed_docs: dto.processedDocs || [],
       },
       onError: async () => {
         await this.updateStatus(file.id, FileProcessingStatus.error);
@@ -141,14 +153,20 @@ export class UserUploadedDocumentAiService {
 
   async searchUploadedDocuments(userId: string, dto: SearchUploadedDocsDto) {
     await this.ensureOwnedDocument(userId, dto.documentId);
-    const count = await this.prisma.userUploadedDocument.count({
+    const files = await this.prisma.userUploadedDocument.findMany({
       where: { documentId: dto.documentId, isEmbedded: true },
+      select: { fileName: true },
     });
-    if (count === 0) {
+    if (files.length === 0) {
       throw new BadRequestException(
         'Chưa có tài liệu nào được vector hóa cho đề tài này',
       );
     }
+
+    const docList = files.map((d) => ({
+      url: d.fileName,
+      name: d.fileName,
+    }));
 
     return this.dispatcher.dispatch({
       userId,
@@ -161,6 +179,7 @@ export class UserUploadedDocumentAiService {
         document_id: dto.documentId,
         query: dto.query,
         top_k: dto.topK || 5,
+        documents: docList,
       },
     });
   }
@@ -175,8 +194,9 @@ export class UserUploadedDocumentAiService {
       errorCode: 622,
       dto: {},
       kafkaData: {
-        file_id: file.id,
-        document_id: file.documentId,
+        collection: `${file.documentId}_user`,
+        documents: [{ uuids: [file.id] }],
+        data_id: file.id,
       },
       onSuccess: async () => {
         await this.prisma.userUploadedDocument.delete({
@@ -192,26 +212,31 @@ export class UserUploadedDocumentAiService {
     };
   }
 
-  async ensureOwnedFile(userId: string, id: string) {
-    const file = await this.prisma.userUploadedDocument.findFirst({
-      where: { id, document: { userId } },
+  adminDocuments(userId: string, documents: Array<{ url: string; name?: string }>) {
+    return this.dispatcher.dispatch({
+      userId, documentId: 'admin', eventType: 'admin_documents', errorCode: 618, dto: {}, kafkaData: { documents },
     });
+  }
+
+  userGuideDocuments(userId: string, urls: string[], dataId?: string) {
+    return this.dispatcher.dispatch({
+      userId, documentId: 'admin', eventType: 'user_guide_documents', errorCode: 619, dto: {}, kafkaData: { documents_urls: urls, data_id: dataId || 'admin_guide' },
+    });
+  }
+
+  async ensureOwnedFile(userId: string, id: string) {
+    const file = await this.prisma.userUploadedDocument.findFirst({ where: { id, document: { userId } } });
     if (!file) throw new NotFoundException('Uploaded document not found');
     return file;
   }
 
   async ensureOwnedDocument(userId: string, documentId: string) {
-    const doc = await this.prisma.document.findFirst({
-      where: { id: documentId, userId },
-    });
+    const doc = await this.prisma.document.findFirst({ where: { id: documentId, userId } });
     if (!doc) throw new NotFoundException('Document not found');
     return doc;
   }
 
-  private async updateStatus(id: string, status: FileProcessingStatus) {
-    await this.prisma.userUploadedDocument.update({
-      where: { id },
-      data: { processingStatus: status },
-    });
+  private updateStatus(id: string, processingStatus: FileProcessingStatus) {
+    return this.prisma.userUploadedDocument.update({ where: { id }, data: { processingStatus } });
   }
 }
