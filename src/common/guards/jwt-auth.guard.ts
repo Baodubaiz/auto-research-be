@@ -16,6 +16,7 @@ type AuthenticatedRequest = {
     sub: string;
     email: string;
     userName: string;
+    role?: string;
     jti: string;
     exp: number;
   };

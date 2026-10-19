@@ -58,6 +58,7 @@ export class AuthService {
       email: user.email,
       userName: user.userName,
       fullName: user.fullName,
+      role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });
@@ -78,6 +79,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       userName: user.userName,
+      role: user.role,
       jti: randomUUID(),
     });
 
