@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+} from 'class-validator';
 
 // Tài liệu mẫu gửi cho AI
 export class AdminSampleDocumentDto {
@@ -25,17 +33,30 @@ export class AdminSampleDocumentDto {
 
 // Hướng dẫn sử dụng gửi cho AI
 export class AdminUserGuideDto {
-  @IsNotEmpty()
-  @IsString()
-  title!: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { each: true },
+  )
+  documents_urls!: string[];
 
-  @IsNotEmpty()
   @IsString()
-  guideType!: string;
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'data_id must not be blank' })
+  data_id!: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  content!: string;
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  guideType?: string;
+
+  @IsOptional()
+  @IsString()
+  content?: string;
 
   @IsOptional()
   @IsString()

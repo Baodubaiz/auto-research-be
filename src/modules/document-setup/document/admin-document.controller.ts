@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AdminGuard } from '../../../common/guards/admin.guard';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AdminDocumentsAiService } from './admin-documents-ai.service';
+import { AdminDocumentsAuditInterceptor } from './admin-documents-audit.interceptor';
 import {
   AdminSampleDocumentDto,
   AdminUserGuideDto,
@@ -11,6 +20,7 @@ import {
 
 @Controller('admin/documents')
 @UseGuards(JwtAuthGuard, AdminGuard)
+@UseInterceptors(AdminDocumentsAuditInterceptor)
 export class AdminDocumentController {
   constructor(private readonly adminAiService: AdminDocumentsAiService) {}
 

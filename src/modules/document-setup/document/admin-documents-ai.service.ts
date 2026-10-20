@@ -1,4 +1,9 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import {
@@ -43,9 +48,11 @@ export class AdminDocumentsAiService {
       event_type: 'user_guide_documents',
       model_id: 'localhost',
       user_id: userId,
-      document_id: 'admin-guide',
-      session_id: randomUUID(),
+      document_id: 'admin',
+      session_id: 'default',
       language: 'vi',
+      documents_urls: dto.documents_urls,
+      data_id: dto.data_id,
       title: dto.title,
       guide_type: dto.guideType,
       content: dto.content,
@@ -86,6 +93,12 @@ export class AdminDocumentsAiService {
       sessionId: payload.session_id,
       eventType: payload.event_type,
     });
+
+    if (this.correlationService.hasPending(correlationKey)) {
+      throw new ConflictException(
+        'An admin request with this correlation key is already pending',
+      );
+    }
 
     // Handle rejection immediately, even while Kafka publish is still pending.
     const pendingResult = this.correlationService

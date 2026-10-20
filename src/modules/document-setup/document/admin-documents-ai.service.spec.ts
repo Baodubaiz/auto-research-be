@@ -83,6 +83,8 @@ describe('AdminDocumentsAiService', () => {
   it('publishes a user guide with the default version', async () => {
     await expect(
       service.uploadUserGuide('user-1', {
+        documents_urls: ['https://example.com/guide.pdf'],
+        data_id: 'guide-1',
         title: 'Guide',
         guideType: 'faq',
         content: 'Instructions',
@@ -93,8 +95,10 @@ describe('AdminDocumentsAiService', () => {
       expect.objectContaining({
         event_type: 'user_guide_documents',
         user_id: 'user-1',
-        document_id: 'admin-guide',
-        session_id: expect.any(String),
+        document_id: 'admin',
+        session_id: 'default',
+        documents_urls: ['https://example.com/guide.pdf'],
+        data_id: 'guide-1',
         title: 'Guide',
         guide_type: 'faq',
         content: 'Instructions',
@@ -141,6 +145,8 @@ describe('AdminDocumentsAiService', () => {
               fileUrl: 'file.pdf',
             })
           : service.uploadUserGuide('user-1', {
+              documents_urls: ['https://example.com/guide.pdf'],
+              data_id: 'guide-1',
               title: 'Guide',
               guideType: 'faq',
               content: 'Text',
@@ -165,6 +171,23 @@ describe('AdminDocumentsAiService', () => {
         fileUrl: 'file.pdf',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects concurrent user guide requests without overwriting the first', async () => {
+    publish.mockResolvedValue(undefined);
+    const dto = {
+      documents_urls: ['https://example.com/guide.pdf'],
+      data_id: 'guide-1',
+    };
+    const first = service.uploadUserGuide('user-1', dto);
+    await expect(
+      service.uploadUserGuide('user-1', { ...dto, data_id: 'guide-2' }),
+    ).rejects.toMatchObject({ response: { statusCode: 409 } });
+    expect(publish).toHaveBeenCalledTimes(1);
+    const key = 'user-1:admin:default:user_guide_documents';
+    expect(correlation.hasPending(key)).toBe(true);
+    correlation.resolvePending(key, response);
+    await expect(first).resolves.toEqual(response);
   });
 
   it('clears the pending request when Kafka publish fails', async () => {
