@@ -15,6 +15,13 @@ datasource db {
 // 0. ENUM DEFINITIONS
 // ---------------------------------------------------
 
+enum UserRole {
+  user
+  admin
+
+  @@map("user_role")
+}
+
 enum JobStatus {
   pending
   processing
@@ -140,6 +147,7 @@ model User {
   fullName  String?  @map("full_name")
   userName  String   @unique @map("user_name")
   password  String
+  role      UserRole @default(user)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
