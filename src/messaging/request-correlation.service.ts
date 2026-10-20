@@ -141,18 +141,20 @@ export class RequestCorrelationService {
   }
 
   dispatchResponse(key: string, payload: Record<string, unknown>): void {
-    if (this.streamingManager?.hasStream(key)) {
-      this.streamingManager.emitChunk(key, payload);
+    const streamKey = this.findMatchingStreamKey(key) || key;
+
+    if (this.streamingManager?.hasStream(streamKey)) {
+      this.streamingManager.emitChunk(streamKey, payload);
     }
 
-    if (this.streamSubjects.has(key)) {
-      this.emitStreamEvent(key, payload);
+    if (this.streamSubjects.has(streamKey)) {
+      this.emitStreamEvent(streamKey, payload);
       if (payload.has_finished === true) {
-        this.completeStream(key);
-        this.resolvePending(key, payload);
+        this.completeStream(streamKey);
+        this.resolvePending(streamKey, payload);
       } else if (payload.error || payload.error_code) {
-        this.errorStream(key, payload);
-        this.rejectPending(key, payload);
+        this.errorStream(streamKey, payload);
+        this.rejectPending(streamKey, payload);
       }
       return;
     }
@@ -193,22 +195,34 @@ export class RequestCorrelationService {
   }
 
   private findMatchingKey(key: string): string | undefined {
-    if (this.pendingRequests.has(key)) {
-      return key;
-    }
+    if (this.pendingRequests.has(key)) return key;
+    return this.findMatchingKeyInMap(this.pendingRequests.keys(), key);
+  }
 
+  private findMatchingStreamKey(key: string): string | undefined {
+    if (this.streamSubjects.has(key)) return key;
+    return this.findMatchingKeyInMap(this.streamSubjects.keys(), key);
+  }
+
+  private findMatchingKeyInMap(
+    mapKeys: Iterable<string>,
+    key: string,
+  ): string | undefined {
     const parts = key.split(':');
-    if (parts.length === 4) {
-      const [userId, targetId, , eventType] = parts;
-      for (const existingKey of this.pendingRequests.keys()) {
-        const [exUser, exTarget, , exEvent] = existingKey.split(':');
-        if (
-          exUser === userId &&
-          exTarget === targetId &&
-          exEvent === eventType
-        ) {
-          return existingKey;
-        }
+    if (parts.length !== 4) return undefined;
+    const [userId, targetId, , eventType] = parts;
+    for (const existingKey of mapKeys) {
+      if (existingKey === key) return key;
+      const [exUser, exTarget, , exEvent] = existingKey.split(':');
+      const isTargetMatch =
+        exTarget === targetId ||
+        (exTarget.replace(/-/g, '').slice(0, 24) === targetId.replace(/-/g, '').slice(0, 24));
+      if (
+        exUser === userId &&
+        isTargetMatch &&
+        exEvent === eventType
+      ) {
+        return existingKey;
       }
     }
     return undefined;

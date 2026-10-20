@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JobStatus, ModuleType, Prisma, SlideStatus } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
@@ -13,6 +9,7 @@ import { StreamingManagerService } from '../../../common/streaming/streaming-man
 import { GenerateSlideRequestDto } from './dto/generate-slide-request.dto';
 import { GeneratedSlideHelper } from './generated-slide.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class GeneratedSlideAiService {
@@ -64,15 +61,23 @@ export class GeneratedSlideAiService {
       },
     });
 
+    const sessionId = dto.sessionId || randomUUID();
+    const numSlides =
+      typeof dto.userPreference === 'number'
+        ? dto.userPreference
+        : (dto.userPreference?.numSlides ?? 15);
+
     const streamKey = this.streamingManager.buildStreamKey({
       userId,
       documentId: dto.documentId,
+      sessionId,
       eventType: 'gen_slides',
     });
 
     const corrKey = this.correlation.buildCorrelationKey({
       userId,
       documentId: dto.documentId,
+      sessionId,
       eventType: 'gen_slides',
     });
 
@@ -86,11 +91,12 @@ export class GeneratedSlideAiService {
       event_type: 'gen_slides',
       user_id: userId,
       document_id: dto.documentId,
+      session_id: sessionId,
       raw_report: rawReport,
-      user_preference: dto.userPreference || { num_slides: 15 },
+      user_preference: numSlides,
       manual_mode: dto.manualMode ?? false,
       slide_style: dto.slideStyle || dto.userPreference?.theme || 'default',
-      model_id: dto.modelId || 'localhost',
+      model_id: dto.modelId || DEFAULT_AI_MODEL,
       language: dto.language || 'vi',
       job_id: job.id,
       slide_id: slideRecord.id,
@@ -200,16 +206,22 @@ export class GeneratedSlideAiService {
     return {
       jobId: job.id,
       slideId: slideRecord.id,
+      sessionId,
       streamKey,
       status: 'started',
     };
   }
 
-  async getSlideStream(userId: string, documentId: string) {
+  async getSlideStream(
+    userId: string,
+    documentId: string,
+    sessionId?: string,
+  ) {
     await this.ensureOwnedDocument(userId, documentId);
     const streamKey = this.streamingManager.buildStreamKey({
       userId,
       documentId,
+      sessionId,
       eventType: 'gen_slides',
     });
     return this.streamingManager.createStream(streamKey, 300000);

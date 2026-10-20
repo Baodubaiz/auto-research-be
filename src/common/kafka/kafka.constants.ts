@@ -29,7 +29,12 @@ export const ALL_BASE_TOPICS = [
   ENHANCEMENT_RESPONSE_TOPIC,
 ] as const;
 
+declare const process: { env: Record<string, string | undefined> };
+
+export const DEFAULT_AI_MODEL = process.env.DEFAULT_AI_MODEL || 'gemini-3.5-flash-lite';
+
 export const SUPPORTED_KAFKA_MODELS = [
+  'gemini-3.5-flash-lite',
   'localhost',
   'gpt-4o',
   'gemini-2.5-flash',

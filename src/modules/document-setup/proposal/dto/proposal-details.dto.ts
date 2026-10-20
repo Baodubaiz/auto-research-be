@@ -1,4 +1,11 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateTitleDescriptionDto {
   @IsString()
@@ -27,13 +34,21 @@ export class GenerateTitleDescriptionDto {
   subdomains?: string[];
 
   @IsOptional()
+  @IsString()
+  level?: string = 'bachelor';
+
+  @IsOptional()
+  @IsArray()
+  knowledgeBase?: Array<Record<string, unknown>>;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   keywords?: string[];
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -63,7 +78,15 @@ export class GenerateTitleDescriptionNoInfoDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  level?: string = 'bachelor';
+
+  @IsOptional()
+  @IsBoolean()
+  useWebSearch?: boolean = false;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -79,10 +102,14 @@ export class MixTitlesDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsNotEmpty()
-  titles!: string[];
+  titles?: string[];
+
+  @IsOptional()
+  @IsArray()
+  proposals?: Array<Record<string, unknown>>;
 
   @IsOptional()
   @IsString()
@@ -90,7 +117,15 @@ export class MixTitlesDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  domain?: string;
+
+  @IsOptional()
+  @IsString()
+  level?: string = 'bachelor';
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -106,9 +141,21 @@ export class GetResearchTypeDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  title!: string;
+  proposalId?: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  field?: string;
+
+  @IsOptional()
+  @IsString()
+  domain?: string;
 
   @IsOptional()
   @IsString()
@@ -120,7 +167,14 @@ export class GetResearchTypeDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  researchGap?: string;
+
+  @IsOptional()
+  proposal?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -129,15 +183,4 @@ export class GetResearchTypeDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
-}
-
-export interface ProposalDetailsDispatchOptions {
-  userId: string;
-  documentId: string;
-  sessionId?: string;
-  eventType: string;
-  errorCode: number;
-  dto: { modelId?: string; language?: string; [key: string]: any };
-  kafkaData: Record<string, unknown>;
-  onSuccess?: (data: Record<string, unknown>) => Promise<void>;
 }

@@ -76,6 +76,7 @@ describe('DocumentGeneratedSlideController', () => {
     expect(mockAiService.getSlideStream).toHaveBeenCalledWith(
       userId,
       documentId,
+      undefined,
     );
   });
 });

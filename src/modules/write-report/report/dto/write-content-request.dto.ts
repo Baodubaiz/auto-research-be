@@ -1,20 +1,30 @@
 import {
   IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class WriteContentRequestDto {
+  @IsOptional()
   @IsUUID()
-  @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  field!: string;
+  sessionId?: string;
+
+  @IsOptional()
+  @IsString()
+  eventType?: 'write_content' | 'chuyen_de_1' | 'chuyen_de_2' = 'write_content';
+
+  @IsOptional()
+  @IsString()
+  field?: string;
 
   @IsOptional()
   @IsString()
@@ -22,29 +32,64 @@ export class WriteContentRequestDto {
 
   @IsOptional()
   @IsString()
-  referencesStyle?: string;
+  referencesStyle?: string = 'APA';
 
-  @IsObject()
-  @IsNotEmpty()
-  finalProposal!: Record<string, unknown>;
-
-  @IsArray()
   @IsOptional()
+  @IsObject()
+  finalProposal?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
   papersSearch?: Array<Record<string, unknown>>;
 
+  @IsOptional()
   @IsObject()
-  @IsNotEmpty()
-  outline!: Record<string, unknown>;
+  outline?: Record<string, unknown>;
 
-  @IsString()
-  @IsNotEmpty()
-  outlineCode!: string;
+  @IsOptional()
+  outlineCode?: string | string[];
 
   @IsOptional()
   @IsString()
-  modelId?: string;
+  threadId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  resume?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeError?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeMethod?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeCharacter?: boolean;
 
   @IsOptional()
   @IsString()
-  language?: string;
+  analyzeLog?: string;
+
+  @IsOptional()
+  @IsArray()
+  detailedLogs?: Array<Record<string, unknown>>;
+
+  @IsOptional()
+  @IsObject()
+  generatedFiles?: Record<string, string>;
+
+  @IsOptional()
+  @IsBoolean()
+  useWebSearch?: boolean = false;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
+
+  @IsOptional()
+  @IsString()
+  language?: string = 'vi';
 }

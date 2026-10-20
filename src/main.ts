@@ -5,8 +5,13 @@ import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { KafkaTunnelHelper } from './common/kafka/kafka-tunnel.helper';
 
 async function bootstrap() {
+  const rawBrokersEnv =
+    process.env.KAFKA || process.env.KAFKA_BROKERS || '167.254.70.125:9092';
+  KafkaTunnelHelper.startProxyIfRemote(rawBrokersEnv);
+
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
@@ -26,7 +31,9 @@ async function bootstrap() {
   });
   app.use(json({ limit: bodyLimit }));
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['health-check', 'health-check/(.*)'],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -52,6 +59,8 @@ async function bootstrap() {
       : String(rawBrokers)
           .split(',')
           .map((b) => b.trim());
+
+    KafkaTunnelHelper.startProxyIfRemote(brokers);
 
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.KAFKA,

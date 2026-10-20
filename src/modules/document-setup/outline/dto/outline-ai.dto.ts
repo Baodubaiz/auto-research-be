@@ -7,6 +7,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateOutlineAiDto {
   @IsString()
@@ -33,7 +34,10 @@ export class GenerateOutlineAiDto {
 
   @IsOptional()
   @IsString()
-  researchType?: string = 'quantitative';
+  wordCountStr?: string;
+
+  @IsOptional()
+  researchType?: any;
 
   @IsOptional()
   @IsString()
@@ -41,7 +45,26 @@ export class GenerateOutlineAiDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  domain?: string;
+
+  @IsOptional()
+  @IsArray()
+  headings?: any[];
+
+  @IsOptional()
+  @IsArray()
+  headingsPercent?: number[];
+
+  @IsOptional()
+  @IsArray()
+  outlineCode?: string[];
+
+  @IsOptional()
+  finalProposal?: any;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -57,16 +80,46 @@ export class ModifyOutlineAiDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  instruction!: string;
+  instruction?: string;
 
   @IsOptional()
   outline?: Record<string, unknown>;
 
   @IsOptional()
+  @IsArray()
+  headings?: any[];
+
+  @IsOptional()
+  @IsArray()
+  headingsPercent?: number[];
+
+  @IsOptional()
+  @IsArray()
+  newHeadings?: any[];
+
+  @IsOptional()
+  @IsArray()
+  newHeadingsPercent?: number[];
+
+  @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  field?: string;
+
+  @IsOptional()
+  @IsString()
+  domain?: string;
+
+  @IsOptional()
+  researchType?: any;
+
+  @IsOptional()
+  finalProposal?: any;
+
+  @IsOptional()
+  @IsString()
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -91,8 +144,19 @@ export class GenerateOutlineWithRefsDto {
   outline?: Record<string, unknown>;
 
   @IsOptional()
+  @IsArray()
+  outlineCode?: string[];
+
+  @IsOptional()
+  finalProposal?: any;
+
+  @IsOptional()
+  @IsArray()
+  processedDocs?: any[];
+
+  @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -108,14 +172,18 @@ export class UpdateUserRefsDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsNotEmpty()
-  referenceIds!: string[];
+  referenceIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  documents?: any[];
 
   @IsOptional()
   @IsString()
-  modelId?: string = 'localhost';
+  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()

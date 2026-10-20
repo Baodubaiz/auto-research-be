@@ -70,6 +70,7 @@ Toàn bộ dịch vụ Apache Kafka Broker, AI Workers và công cụ giám sát
 | **Local LLM API** | [`http://167.254.70.125:8000/v1`](http://167.254.70.125:8000/v1) | Model đang sử dụng: `openai/gpt-oss-120b` (OpenAI-compatible) |
 | **MinIO Console (S3)** | [`http://167.254.70.125:9001`](http://167.254.70.125:9001) | User: `minio_admin` \| Pass: `minio_password_local` |
 | **Qdrant Dashboard** | [`http://167.254.70.125:6333/dashboard`](http://167.254.70.125:6333/dashboard) | Vector Database Dashboard |
+| **QUAN LY MODEL UI (Web)** | [`http://167.254.70.125:8088`](http://167.254.70.125:8088) | Giao diện Web quản lý model API AI | admin123
 
 #### 📚 Tài liệu tích hợp hệ thống (Integration Documentation):
 - `docs/KAFKA_INTEGRATION_GUIDE.md`: Định dạng sự kiện Kafka và đặc tả cấu trúc JSON Payload.

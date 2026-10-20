@@ -32,7 +32,10 @@ describe('WriterChatbotService', () => {
 
   beforeEach(async () => {
     mockPrisma = {
-      chatSession: { findFirst: jest.fn<any>() },
+      chatSession: {
+        findFirst: jest.fn<any>(),
+        update: jest.fn<any>().mockResolvedValue({}),
+      },
       chatMessage: {
         findMany: jest.fn<any>().mockResolvedValue([]),
         create: jest.fn<any>().mockResolvedValue({ id: 'msg-1' }),

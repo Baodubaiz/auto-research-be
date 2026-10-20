@@ -9,6 +9,7 @@ import {
   getAiErrorMessage,
   getAiErrorName,
 } from '../../../common/constants/ai-error-codes';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
 
 export interface ProposalAiDispatchOptions {
   userId: string;
@@ -45,7 +46,7 @@ export class ProposalAiDispatcher {
 
     const payload = {
       event_type: opt.eventType,
-      model_id: opt.dto.modelId || 'localhost',
+      model_id: opt.dto.modelId || DEFAULT_AI_MODEL,
       user_id: opt.userId,
       document_id: opt.documentId,
       session_id: sessionId,

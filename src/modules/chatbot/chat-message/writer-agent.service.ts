@@ -16,6 +16,7 @@ import {
 } from './dto/writer-chatbot.dto';
 import { WriterInteractiveHelper } from './writer-interactive.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class WriterAgentService {
@@ -61,15 +62,75 @@ export class WriterAgentService {
       eventType: 'writer',
     });
 
+    let chatHistoryStr = dto.chatHistory || '';
+    if (!chatHistoryStr) {
+      const historyMessages = await this.prisma.chatMessage.findMany({
+        where: { sessionId: session.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      chatHistoryStr = historyMessages
+        .map((m: { sender: string; message: string }) => `${m.sender}: ${m.message}`)
+        .join('\n');
+    }
+
+    const summaryObj =
+      dto.summary ||
+      (session.summary as Record<string, unknown> | null) ||
+      {};
+
+    let outlineStr = '';
+    if (dto.outline) {
+      outlineStr =
+        typeof dto.outline === 'string'
+          ? dto.outline
+          : JSON.stringify(dto.outline);
+    } else {
+      const outlineRecord = await this.prisma.outline.findUnique({
+        where: { documentId },
+      });
+      if (outlineRecord?.structure) {
+        outlineStr =
+          typeof outlineRecord.structure === 'string'
+            ? outlineRecord.structure
+            : JSON.stringify(outlineRecord.structure);
+      }
+    }
+
+    let domainStr = dto.domain || '';
+    let fieldStr = dto.field || '';
+    if (!domainStr || !fieldStr) {
+      const doc = await this.prisma.document.findUnique({
+        where: { id: documentId },
+        select: { field: true, domains: true },
+      });
+      if (doc) {
+        if (!fieldStr && doc.field) fieldStr = doc.field;
+        if (!domainStr && Array.isArray(doc.domains) && doc.domains.length > 0) {
+          domainStr = String(doc.domains[0]);
+        }
+      }
+    }
+    if (!domainStr) domainStr = 'Tổng quan';
+    if (!fieldStr) fieldStr = 'Nghiên cứu khoa học';
+
     const payload = {
       event_type: 'writer',
       user_id: userId,
       conv_id: session.id,
       session_id: session.id,
       document_id: documentId,
-      model_id: dto.modelId || session.model || 'localhost',
+      model_id: dto.modelId || session.model || DEFAULT_AI_MODEL,
       language: dto.language || session.language || 'vi',
       instruction: dto.instruction || '',
+      chat_history: chatHistoryStr,
+      summary: summaryObj,
+      outline: outlineStr,
+      domain: domainStr,
+      field: fieldStr,
+      notes: dto.notes || [],
+      use_web_search: dto.useWebSearch ?? session.webSearchEnabled ?? true,
+      max_research_iterations: dto.maxResearchIterations || 3,
+      resume_error: dto.resumeError ?? false,
       job_id: job.id,
     };
 

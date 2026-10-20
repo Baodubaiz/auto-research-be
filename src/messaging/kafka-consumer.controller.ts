@@ -52,15 +52,25 @@ export class KafkaConsumerController {
         return;
       }
 
-      const userId = String(payload.user_id || '');
+      const userId = String(payload.user_id || payload.userId || '');
       const documentId = payload.document_id
         ? String(payload.document_id)
-        : undefined;
-      const convId = payload.conv_id ? String(payload.conv_id) : undefined;
+        : payload.documentId
+          ? String(payload.documentId)
+          : undefined;
+      const convId = payload.conv_id
+        ? String(payload.conv_id)
+        : payload.convId
+          ? String(payload.convId)
+          : undefined;
       const sessionId = payload.session_id
         ? String(payload.session_id)
-        : undefined;
-      const eventType = String(payload.event_type || 'unknown');
+        : payload.sessionId
+          ? String(payload.sessionId)
+          : undefined;
+      const eventType = String(
+        payload.event_type || payload.eventType || 'unknown',
+      );
 
       const correlationKey = this.correlationService.buildCorrelationKey({
         userId,
