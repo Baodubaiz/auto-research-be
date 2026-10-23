@@ -43,8 +43,7 @@ export class JobService {
       },
     });
 
-    const kafkaEnabled =
-      this.configService.get<string>('KAFKA_ENABLED', 'false') === 'true';
+    const kafkaEnabled = this.configService.get<boolean>('kafka.enabled', true);
 
     if (kafkaEnabled) {
       await this.kafkaProducer.publishJob(job);
@@ -155,8 +154,7 @@ export class JobService {
       },
     });
 
-    const kafkaEnabled =
-      this.configService.get<string>('KAFKA_ENABLED', 'false') === 'true';
+    const kafkaEnabled = this.configService.get<boolean>('kafka.enabled', true);
     if (kafkaEnabled) {
       await this.kafkaProducer.publishJob(updatedJob);
     } else {

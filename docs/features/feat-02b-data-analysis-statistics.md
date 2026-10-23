@@ -90,3 +90,24 @@ flowchart TD
     
     SaveDB --> TriggerResume[7. Gửi write_content kèm resume=true & analyze_log để viết tiếp Chương 4]
 ```
+
+---
+
+## 📌 Cập nhật 2026-10-23 — API `analyzer` / `analyzer_tool` (khung BE đã có)
+
+| Method | Route | Ghi chú |
+|---|---|---|
+| `POST` | `/datasets/:datasetId/analyze` | event `analyzer` — báo cáo chuyên sâu (mã lỗi **631**) |
+| `POST` | `/datasets/:datasetId/analyze-tool` | event `analyzer_tool` — chạy nhanh, **không** chèn bảng/biểu đồ |
+
+Request (giống nhau cho cả 2): `finalProposal` (bắt buộc), `data` = `{ tên_cột: [giá trị] }` (bắt buộc), `variables[]`
+(`name`, `code`, `variable_type`, `role`, `scale` bắt buộc — **enum tiếng Anh**), tuỳ chọn `autoPlanMode` (default `true`),
+`autoActionMode` (default `true`), `manualPlanMode` (default `false`), `toolConfigs`, `resume`, `resumeError`, `feedback`, `db`.
+
+Hành vi:
+- `analyzer` **không stream** — 1 message khi xong; tiến trình chỉ qua webhook `processStatus`.
+- `has_finished: false` ⇒ job `suspended` với `resumeStep = analyzer_feedback`, trả `ai_message`; lượt sau gọi lại cùng route với `resume: true` + `feedback` + `threadId`.
+- Hoàn tất ⇒ lưu response vào `Job.result` (không cần migration). `result_html` là **URL MinIO**; nếu rỗng ⇒ `report_html_missing = true` (upload báo cáo thất bại, job vẫn finished).
+- `analyze_log` hiện là literal `"Done"` và `current_variables` luôn `[]` (bug phía AI) ⇒ **không dùng để hiển thị**.
+
+> ⏳ E2E với AI thật chỉ chạy sau khi AI fix **B2** (`current_variables`) và **B3** (`analyze_log`).

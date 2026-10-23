@@ -1,0 +1,255 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JobStatus, ModuleType, Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import { PrismaService } from '../../../database/prisma.service';
+import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
+import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import {
+  ProposeMethodResumeDto,
+  ProposeMethodStartDto,
+} from './dto/propose-method-ai.dto';
+
+const EVENT_TYPE = 'propose_method';
+const TIMEOUT_MS = 300_000;
+const PUBLISH_ERROR_CODE = 610;
+const PROPOSE_ERROR_CODE = 637;
+
+export interface ProposeResponse {
+  has_finished?: boolean;
+  ai_message?: string;
+  final_proposal?: Record<string, unknown>;
+  input_tokens?: number;
+  output_tokens?: number;
+  embed_tokens?: number;
+}
+
+interface DispatchParams {
+  userId: string;
+  documentId: string;
+  sessionId: string;
+  threadId: string;
+  payload: Record<string, unknown>;
+}
+
+@Injectable()
+export class ProposedMethodAiService {
+  private readonly logger = new Logger(ProposedMethodAiService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly kafkaProducer: KafkaProducerService,
+    private readonly correlationService: RequestCorrelationService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /** Lượt đầu: AI đề xuất mô hình nghiên cứu / giả thuyết / bảng câu hỏi. */
+  start(userId: string, documentId: string, dto: ProposeMethodStartDto) {
+    const threadId = dto.threadId || randomUUID();
+    const sessionId = dto.sessionId || `sess-${EVENT_TYPE}-${randomUUID()}`;
+
+    return this.dispatch({
+      userId,
+      documentId,
+      sessionId,
+      threadId,
+      payload: {
+        thread_id: threadId,
+        user_input: dto.userInput || '',
+        final_proposal: dto.finalProposal,
+        research_type: dto.researchType ?? { type: 0 },
+        auto_mode: dto.autoMode ?? false,
+        inherit_mode: dto.inheritMode ?? false,
+        resume_method: false,
+        resume_error: false,
+        db: 'redis',
+        model_id: dto.modelId || DEFAULT_AI_MODEL,
+      },
+    });
+  }
+
+  /** Lượt tiếp: người dùng trả lời câu hỏi của AI (giữ nguyên `thread_id`). */
+  resume(userId: string, documentId: string, dto: ProposeMethodResumeDto) {
+    const sessionId = dto.sessionId || `sess-${EVENT_TYPE}-${randomUUID()}`;
+
+    return this.dispatch({
+      userId,
+      documentId,
+      sessionId,
+      threadId: dto.threadId,
+      payload: {
+        thread_id: dto.threadId,
+        user_input: dto.userInput,
+        final_proposal: dto.finalProposal ?? {},
+        research_type: dto.researchType ?? { type: 0 },
+        resume_method: true,
+        resume_error: false,
+        db: 'redis',
+        model_id: dto.modelId || DEFAULT_AI_MODEL,
+      },
+    });
+  }
+
+  private async dispatch(params: DispatchParams) {
+    const { userId, documentId, sessionId, threadId, payload } = params;
+
+    const document = await this.prisma.document.findFirst({
+      where: { id: documentId, userId },
+      select: { id: true },
+    });
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    const job = await this.prisma.job.create({
+      data: {
+        module: ModuleType.write_report,
+        action: EVENT_TYPE,
+        documentId,
+        sessionId,
+        threadId,
+        status: JobStatus.pending,
+        payload: payload as Prisma.InputJsonValue,
+      },
+    });
+
+    const kafkaPayload: Record<string, unknown> = {
+      event_type: EVENT_TYPE,
+      user_id: userId,
+      document_id: documentId,
+      session_id: sessionId,
+      language: 'Vietnamese',
+      ...payload,
+    };
+
+    const correlationKey = this.correlationService.buildCorrelationKey({
+      userId,
+      documentId,
+      sessionId,
+      eventType: EVENT_TYPE,
+    });
+
+    const pendingPromise = this.correlationService.registerPending<
+      Record<string, unknown>
+    >(correlationKey, TIMEOUT_MS, EVENT_TYPE, job.id);
+
+    const topic =
+      this.configService.get<string>('kafka.topics.write_report.request') ||
+      'write_section_request_local';
+
+    try {
+      await this.kafkaProducer.publish(topic, kafkaPayload);
+      await this.prisma.job.update({
+        where: { id: job.id },
+        data: { status: JobStatus.processing },
+      });
+    } catch (publishError: unknown) {
+      const message =
+        publishError instanceof Error
+          ? publishError.message
+          : 'Publish to Kafka failed';
+      this.correlationService.clearPending(correlationKey, message);
+      await this.prisma.job.update({
+        where: { id: job.id },
+        data: {
+          status: JobStatus.error,
+          errorCode: String(PUBLISH_ERROR_CODE),
+          errorMessage: message,
+        },
+      });
+      throw publishError;
+    }
+
+    const response = (await pendingPromise) as ProposeResponse;
+
+    if (response.has_finished === false) {
+      // Interrupt: AI hỏi lại ⇒ job treo chờ người dùng (không phải lỗi).
+      await this.prisma.job.update({
+        where: { id: job.id },
+        data: {
+          status: JobStatus.suspended,
+          resumeStep: 'need_propose_method',
+          threadId,
+          result: response as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return {
+        job_id: job.id,
+        event_type: EVENT_TYPE,
+        document_id: documentId,
+        session_id: sessionId,
+        thread_id: threadId,
+        status: 'suspended',
+        ai_message: response.ai_message ?? null,
+        data: response,
+      };
+    }
+
+    const proposal = (response.final_proposal ?? {}) as Record<string, unknown>;
+    await this.saveProposedMethod(documentId, proposal);
+    await this.prisma.job.update({
+      where: { id: job.id },
+      data: {
+        status: JobStatus.finished,
+        threadId,
+        result: response as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    this.logger.log(`[${EVENT_TYPE}] hoàn tất job ${job.id} cho ${documentId}`);
+
+    return {
+      job_id: job.id,
+      event_type: EVENT_TYPE,
+      document_id: documentId,
+      session_id: sessionId,
+      thread_id: threadId,
+      status: 'finished',
+      data: response,
+    };
+  }
+
+  /**
+   * Map `final_proposal` của AI → bảng `ProposedMethod` (không cần migration).
+   * `parsed_variables` (AI có thể trả thêm) được giữ trong `Job.result`.
+   */
+  private async saveProposedMethod(
+    documentId: string,
+    proposal: Record<string, unknown>,
+  ) {
+    const data = {
+      researchModel: (proposal.final_model ?? null) as Prisma.InputJsonValue,
+      hypotheses: (proposal.hypothesis ?? null) as Prisma.InputJsonValue,
+      variables: (proposal.variables ?? null) as Prisma.InputJsonValue,
+      surveyQuestions: (proposal.survey_questions ??
+        null) as Prisma.InputJsonValue,
+      questions: (proposal.questions ?? null) as Prisma.InputJsonValue,
+    };
+
+    try {
+      const existing = await this.prisma.proposedMethod.findFirst({
+        where: { documentId },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await this.prisma.proposedMethod.update({
+          where: { id: existing.id },
+          data,
+        });
+        return;
+      }
+
+      await this.prisma.proposedMethod.create({ data: { documentId, ...data } });
+    } catch (error: unknown) {
+      // Không chặn kết quả trả FE nếu lưu DB lỗi — nhưng phải log rõ mã lỗi nghiệp vụ.
+      this.logger.error(
+        `Lưu ProposedMethod thất bại (${PROPOSE_ERROR_CODE}) cho ${documentId}: ${
+          (error as Error).message
+        }`,
+      );
+    }
+  }
+}
