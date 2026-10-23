@@ -16,6 +16,7 @@ export const EVENT_TIMEOUT_CONFIG: Record<string, number> = {
   analyzer_tool: 300_000,
   gen_slides: 300_000,
   comment_data: 300_000,
+  check_logic_data: 300_000,
   propose_method: 300_000,
 
   // 120s (2 minutes) - Chatbots & Text enhancement (and default)
