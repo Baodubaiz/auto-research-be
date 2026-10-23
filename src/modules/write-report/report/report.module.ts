@@ -4,6 +4,7 @@ import { ReportController } from './report.controller';
 import { DocumentReportController } from './document-report.controller';
 import { WriteContentStreamController } from './write-content-stream.controller';
 import { ReportService } from './report.service';
+import { TranslateAiService } from './translate-ai.service';
 import { WriteContentAiService } from './write-content-ai.service';
 
 @Module({
@@ -13,7 +14,7 @@ import { WriteContentAiService } from './write-content-ai.service';
     DocumentReportController,
     WriteContentStreamController,
   ],
-  providers: [ReportService, WriteContentAiService],
-  exports: [ReportService, WriteContentAiService],
+  providers: [ReportService, WriteContentAiService, TranslateAiService],
+  exports: [ReportService, WriteContentAiService, TranslateAiService],
 })
 export class ReportModule {}

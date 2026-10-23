@@ -19,13 +19,53 @@ export class WriteContentMongoHelper {
         this.cachedClient = null;
       }
     }
-    const uri =
-      process.env.MONGO_URI ||
-      'mongodb://root:mongo_password_local@167.254.70.125:27017/?authSource=admin';
+    const uri = process.env.MONGO_URI?.trim();
+    if (!uri) {
+      throw new Error(
+        'Thiếu biến môi trường MONGO_URI. Cấu hình trong .env (không commit giá trị thật) — xem .env.example.',
+      );
+    }
     const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
     await client.connect();
     this.cachedClient = client;
     return client;
+  }
+
+  /**
+   * Đọc dữ liệu AI đã ghi vào `admin.document_configurations` (mục C.5 — translate_report).
+   * Dùng read trên **primary** + retry ngắn: AI đảm bảo "ghi xong mới gửi message",
+   * retry chỉ để chống replication/độ trễ mạng.
+   */
+  static async readDocumentConfiguration(
+    documentId: string,
+    fields: string[] = ['translatedContent', 'translatedOutline'],
+  ): Promise<Record<string, unknown> | null> {
+    const client = await this.getClient();
+    const adminDb = client.db('admin');
+    const projection: Record<string, 1> = {};
+    for (const field of fields) {
+      projection[field] = 1;
+    }
+
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const doc = await adminDb
+          .collection('document_configurations')
+          .findOne({ documentId }, { projection });
+        if (doc) {
+          return doc as Record<string, unknown>;
+        }
+      } catch (error: unknown) {
+        lastError = error as Error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+    return null;
   }
 
   static async ensureMongoReady(

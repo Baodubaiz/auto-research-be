@@ -39,7 +39,8 @@ describe('InterruptResumeService', () => {
 
     configServiceMock = {
       get: jest.fn<any>().mockImplementation((key: any, defaultVal: any) => {
-        if (key === 'KAFKA_ENABLED') return 'true';
+        // Cờ Kafka đọc qua `kafka.enabled` (nguồn cấu hình duy nhất)
+        if (key === 'kafka.enabled') return true;
         return defaultVal;
       }),
     };

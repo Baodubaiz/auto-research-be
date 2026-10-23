@@ -22,8 +22,8 @@ async function bootstrap() {
     'http://localhost:3000',
   ]);
   const bodyLimit = configService.get<string>('app.bodyLimit', '10mb');
-  const kafkaEnabled =
-    configService.get<string>('KAFKA_ENABLED', 'true') !== 'false';
+  // Nguồn cấu hình duy nhất: `kafka.enabled` (xem src/config/kafka.config.ts)
+  const kafkaEnabled = configService.get<boolean>('kafka.enabled', true);
 
   app.enableCors({
     origin: corsOrigins,
@@ -49,7 +49,7 @@ async function bootstrap() {
     `🚀 Application is running on: http://localhost:${port}/${apiPrefix}`,
   );
 
-  // Only connect Kafka if KAFKA_ENABLED !== 'false' in .env
+  // Chỉ kết nối Kafka khi `kafka.enabled` = true (nguồn: KAFKA_ENABLED trong .env)
   if (kafkaEnabled) {
     const rawBrokers =
       configService.get<string | string[]>('kafka.brokers') ||
