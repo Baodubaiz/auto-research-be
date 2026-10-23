@@ -19,9 +19,12 @@ export class WriteContentMongoHelper {
         this.cachedClient = null;
       }
     }
-    const uri =
-      process.env.MONGO_URI ||
-      'mongodb://root:mongo_password_local@167.254.70.125:27017/?authSource=admin';
+    const uri = process.env.MONGO_URI?.trim();
+    if (!uri) {
+      throw new Error(
+        'Thiếu biến môi trường MONGO_URI. Cấu hình trong .env (không commit giá trị thật) — xem .env.example.',
+      );
+    }
     const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
     await client.connect();
     this.cachedClient = client;

@@ -119,7 +119,7 @@ export class InterruptResumeService {
     });
 
     const kafkaEnabled =
-      this.configService?.get<string>('KAFKA_ENABLED', 'false') === 'true';
+      this.configService?.get<boolean>('kafka.enabled', true) ?? true;
 
     if (kafkaEnabled && this.kafkaProducer) {
       await this.kafkaProducer.publishJob(updatedJob);

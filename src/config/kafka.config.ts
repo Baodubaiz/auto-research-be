@@ -1,6 +1,26 @@
 import { registerAs } from '@nestjs/config';
 
+/**
+ * Nguồn sự thật DUY NHẤT cho cờ bật/tắt Kafka.
+ *
+ * Trước đây mỗi nơi tự đọc `KAFKA_ENABLED` với default khác nhau
+ * (`main.ts` = 'true', `job.service`/`interrupt-resume` = 'false') nên có thể
+ * xảy ra trạng thái "producer bật, job chạy fallback mock" trong cùng một process.
+ *
+ * Quy ước:
+ * - Không set hoặc set chuỗi rỗng  ⇒ mặc định BẬT (giữ tương thích hành vi cũ của main.ts).
+ * - `'true'`  (không phân biệt hoa/thường) ⇒ BẬT.
+ * - Mọi giá trị khác (`'false'`, `'0'`, `'no'`...) ⇒ TẮT.
+ */
+export function resolveKafkaEnabled(raw: string | undefined): boolean {
+  if (raw === undefined || raw.trim() === '') {
+    return true;
+  }
+  return raw.trim().toLowerCase() === 'true';
+}
+
 export default registerAs('kafka', () => {
+  const enabled = resolveKafkaEnabled(process.env.KAFKA_ENABLED);
   const isLocal =
     process.env.IS_LOCAL === 'true' || process.env.NODE_ENV !== 'production';
   const suffix = isLocal ? '_local' : '';
@@ -10,6 +30,7 @@ export default registerAs('kafka', () => {
   const brokers = rawBrokers.split(',').map((b) => b.trim());
 
   return {
+    enabled,
     isLocal,
     brokers,
     clientId: process.env.KAFKA_CLIENT_ID || 'autoresearch-backend',

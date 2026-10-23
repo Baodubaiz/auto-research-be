@@ -9,7 +9,22 @@ export class JobFallbackService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Chặn tuyệt đối fallback ở production: trước đây khi tắt Kafka, service này
+   * ghi dữ liệu mock (documents/proposals/references/outline) vào DB thật.
+   */
+  private assertFallbackAllowed(): void {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'JobFallbackService bị chặn ở production: KAFKA_ENABLED=false sẽ ghi dữ liệu mock vào DB thật. ' +
+          'Hãy bật Kafka (KAFKA_ENABLED=true) hoặc chạy ở môi trường dev/test.',
+      );
+    }
+  }
+
   async processJobFallback(job: any) {
+    this.assertFallbackAllowed();
+
     const payloadData = (job.payload as any) || {};
     let resultData: any = {};
 
