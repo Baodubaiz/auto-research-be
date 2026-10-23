@@ -31,6 +31,43 @@ export class WriteContentMongoHelper {
     return client;
   }
 
+  /**
+   * Đọc dữ liệu AI đã ghi vào `admin.document_configurations` (mục C.5 — translate_report).
+   * Dùng read trên **primary** + retry ngắn: AI đảm bảo "ghi xong mới gửi message",
+   * retry chỉ để chống replication/độ trễ mạng.
+   */
+  static async readDocumentConfiguration(
+    documentId: string,
+    fields: string[] = ['translatedContent', 'translatedOutline'],
+  ): Promise<Record<string, unknown> | null> {
+    const client = await this.getClient();
+    const adminDb = client.db('admin');
+    const projection: Record<string, 1> = {};
+    for (const field of fields) {
+      projection[field] = 1;
+    }
+
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const doc = await adminDb
+          .collection('document_configurations')
+          .findOne({ documentId }, { projection });
+        if (doc) {
+          return doc as Record<string, unknown>;
+        }
+      } catch (error: unknown) {
+        lastError = error as Error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+    return null;
+  }
+
   static async ensureMongoReady(
     mongoDocId: string,
     papers: Array<{ title?: string; abstract?: string; [key: string]: unknown }>,
