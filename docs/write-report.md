@@ -63,3 +63,20 @@ sequenceDiagram
 
 ## Cập nhật lần cuối
 2026-10-19 — Khởi tạo tài liệu module theo chuẩn `rules/rule-docs.md`.
+
+---
+
+## Cập nhật 2026-10-23 — API `translate_report`
+
+`POST /documents/:documentId/translate-report` (JWT)
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| `targetLanguage` | string (bắt buộc) | Chuỗi tự do ("English", "Tiếng Việt") — AI nhúng vào prompt |
+| `isOutline` | boolean (mặc định `false`) | `true` ⇒ dịch đề cương, `false` ⇒ dịch toàn văn |
+
+- AI **không** trả nội dung bản dịch qua Kafka; AI ghi vào Mongo `admin.document_configurations`:
+  `translatedContent` (toàn văn) hoặc `translatedOutline` (đề cương) — AI ghi **trước** khi gửi message.
+- BE đọc lại Mongo (read primary + retry ngắn) và trả `content` cho FE. Không đọc được ⇒ `content: null`,
+  job vẫn `finished` (AI đã dịch xong) — FE hiển thị cảnh báo.
+- Mã lỗi: publish Kafka `610`; nghiệp vụ `641` (translate). Cross-user ⇒ **404**.
