@@ -83,3 +83,22 @@ docs/KAFKA_INTEGRATION_GUIDE.md
 KAFKA_FULL_SCHEMA_AND_WORKFLOW.md
 *.tsbuildinfo
 
+# ==============================================================================
+# Local working docs — báo cáo, review, hỏi-đáp với team AI, handoff, kế hoạch
+# (chỉ dùng trong workspace, KHÔNG commit; giữ lại khi đổi nhánh/pull)
+# ==============================================================================
+docs/PROJECT_STATUS_REPORT.md
+docs/REPORT_TASK_STATUS_*.md
+docs/TASKS_PROGRESS_SUMMARY.md
+docs/EXECUTION_ORDER_*.md
+docs/REVIEW_*.md
+docs/AI_*.md
+docs/QUESTIONS_FOR_AI_TEAM*.md
+docs/handoff_*.md
+docs/HANDOFF_*.md
+docs/reply_to_*.md
+docs/plan_next-steps_*.md
+
+# Backup cục bộ trước khi đổi nhánh (không commit)
+.local_backup/
+
