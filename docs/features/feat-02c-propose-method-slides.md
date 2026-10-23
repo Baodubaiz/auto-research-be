@@ -96,3 +96,17 @@ sequenceDiagram
     BE->>BE: Lưu bảng generated_slides (pptxUrl, slidesJson)
     BE->>WS: Báo hoàn tất & hiển thị nút "Tải Slide PowerPoint"
 ```
+
+---
+
+## 📌 Cập nhật 2026-10-23 — `propose_method` đã có API (BE)
+
+| Method | Route | Body chính |
+|---|---|---|
+| `POST` | `/documents/:documentId/propose-method/start` | `finalProposal` (bắt buộc), `researchType {type: 0\|1\|2}`, `autoMode?`, `inheritMode?`, `threadId?`, `userInput?` |
+| `POST` | `/documents/:documentId/propose-method/resume` | `threadId` + `userInput` (bắt buộc), `finalProposal?` |
+
+- `auto_mode` / `inherit_mode` **mặc định `false`** (đúng default của AI Engine ⇒ chế độ tương tác từng bước). FE muốn "AI đề xuất ngay" phải gửi `autoMode: true`.
+- AI trả `has_finished: false` + `ai_message` ⇒ BE đặt job `suspended` với `resumeStep = need_propose_method`, trả `ai_message` cho FE.
+- Hoàn tất ⇒ BE map `final_proposal` vào bảng `ProposedMethod` (`researchModel`, `hypotheses`, `variables`, `surveyQuestions`, `questions`); `parsed_variables` giữ trong `Job.result` (không cần migration).
+- Timeout 300s, mã lỗi nghiệp vụ **637**, lỗi publish Kafka **610**.
