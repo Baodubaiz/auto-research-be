@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsIn,
   IsNotEmpty,
   IsNotEmptyObject,
@@ -116,3 +117,56 @@ export class CommentDataDto extends BaseDataAnalysisDto {
 
 /** `check_logic_data` — kiểm tra logic biến và thang đo. */
 export class CheckLogicDataDto extends BaseDataAnalysisDto {}
+
+/**
+ * `analyzer` / `analyzer_tool` (hợp đồng 7.2 + Phụ lục C.2).
+ * Khác biệt duy nhất giữa 2 event: `event_type` + `is_tool` (AI xử lý), shape request giống nhau.
+ */
+export class AnalyzeRequestDto extends BaseDataAnalysisDto {
+  @IsOptional()
+  @IsString()
+  convId?: string;
+
+  @IsObject()
+  @IsNotEmptyObject()
+  finalProposal!: Record<string, unknown>;
+
+  /** `{ tên_cột: [giá trị...] }` — mọi cột phải cùng độ dài (AI dựng DataFrame từ đây). */
+  @IsObject()
+  @IsNotEmptyObject()
+  data!: Record<string, unknown[]>;
+
+  @IsOptional()
+  @IsBoolean()
+  autoPlanMode?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  autoActionMode?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  manualPlanMode?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  toolConfigs?: Array<Record<string, unknown>>;
+
+  /** `true` khi người dùng trả lời câu hỏi của AI (kèm `feedback` + `threadId`). */
+  @IsOptional()
+  @IsBoolean()
+  resume?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeError?: boolean;
+
+  @IsOptional()
+  @IsString()
+  feedback?: string;
+
+  /** `redis` (mặc định) hoặc `mongo` — nơi AI lưu checkpoint phân tích. */
+  @IsOptional()
+  @IsIn(['redis', 'mongo'])
+  db?: 'redis' | 'mongo';
+}
