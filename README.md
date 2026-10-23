@@ -60,17 +60,19 @@ Do logs của NestJS khi khởi động ánh xạ hàng trăm route nên dễ b�
 
 ### 2. Thông tin Hạ tầng VPS & Dịch vụ AI (Monitoring & Storage)
 
-Toàn bộ dịch vụ Apache Kafka Broker, AI Workers và công cụ giám sát lưu trữ được triển khai tập trung trên VPS công khai:
+Các dịch vụ Apache Kafka Broker, AI Workers và công cụ giám sát lưu trữ được triển khai tập trung trên **VPS nội bộ của team**.
+⚠️ **Không ghi host/credential thật vào repo.** Thông tin kết nối lấy từ `.env` (không commit) — xem `.env.example` để biết danh sách biến.
 
-| Dịch vụ | Địa chỉ / URL | Ghi chú & Tài khoản |
+| Dịch vụ | Biến môi trường (đã dùng trong code) | Ghi chú |
 |---|---|---|
-| **Máy chủ VPS** | `167.254.70.125` | IP máy chủ dịch vụ nền tảng AI |
-| **Kafka Broker** | `167.254.70.125:9092` | Protocol: `PLAINTEXT` |
-| **Kafka UI (Web)** | [`http://167.254.70.125:8080`](http://167.254.70.125:8080) | Giao diện Web theo dõi topics & events Kafka |
-| **Local LLM API** | [`http://167.254.70.125:8000/v1`](http://167.254.70.125:8000/v1) | Model đang sử dụng: `openai/gpt-oss-120b` (OpenAI-compatible) |
-| **MinIO Console (S3)** | [`http://167.254.70.125:9001`](http://167.254.70.125:9001) | User: `minio_admin` \| Pass: `minio_password_local` |
-| **Qdrant Dashboard** | [`http://167.254.70.125:6333/dashboard`](http://167.254.70.125:6333/dashboard) | Vector Database Dashboard |
-| **QUAN LY MODEL UI (Web)** | [`http://167.254.70.125:8088`](http://167.254.70.125:8088) | Giao diện Web quản lý model API AI | admin123
+| **Kafka Broker** | `KAFKA` / `KAFKA_BROKERS`, `KAFKA_CLIENT_ID`, `KAFKA_GROUP_ID`, `KAFKA_SSL`, `KAFKA_ENABLED` | Đặt qua `.env`; `KAFKA_ENABLED` là cờ duy nhất quyết định bật/tắt Kafka |
+| **Local LLM API** | `LOCALLLM_BASE_URL`, `DEFAULT_AI_MODEL` | Endpoint OpenAI-compatible |
+| **MongoDB** | `MONGO_URI` | Bắt buộc cho `write_content` (không còn giá trị mặc định trong code) |
+| **Redis (Stack)** | `REDIS_ENABLED`, `REDIS_URL`, `REDIS_KEY_PREFIX`, `REDIS_CONNECT_TIMEOUT` | `docker-compose` local cung cấp Redis Stack |
+| **PostgreSQL** | `DATABASE_URL` | Prisma |
+| **Webhook AI → BE** | `API_KEY_ID` | Header `x-api-key` của `PUT /health-check/{id}` |
+
+> Danh sách biến chi tiết: [`.env.example`](.env.example). Giá trị thật của từng môi trường do DevOps/Human quản lý (không lưu trong Git).
 
 #### 📚 Tài liệu tích hợp hệ thống (Integration Documentation):
 - `docs/KAFKA_INTEGRATION_GUIDE.md`: Định dạng sự kiện Kafka và đặc tả cấu trúc JSON Payload.
