@@ -148,7 +148,7 @@ export class WriteContentMongoHelper {
       .toArray();
 
     const foundSet = new Set(
-      found.map((doc: { _id: unknown }) => String(doc._id)),
+      found.map((doc) => String((doc as unknown as { _id?: unknown })._id)),
     );
 
     return documentIds.filter((id) => foundSet.has(this.toMongoDocId(id)));

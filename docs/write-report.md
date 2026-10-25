@@ -80,3 +80,41 @@ sequenceDiagram
 - BE đọc lại Mongo (read primary + retry ngắn) và trả `content` cho FE. Không đọc được ⇒ `content: null`,
   job vẫn `finished` (AI đã dịch xong) — FE hiển thị cảnh báo.
 - Mã lỗi: publish Kafka `610`; nghiệp vụ `641` (translate). Cross-user ⇒ **404**.
+
+---
+
+## Cập nhật 2026-10-25 — API `delete_report` (T-13) & resume `need_data_analyze` (T-11)
+
+### 1) `POST /documents/delete-report` (JWT)
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| `documentIds` | string[] (bắt buộc, ≥1, UUID) | Danh sách bài viết cần xoá; id trùng tự động gộp |
+| `threadIds` | string[] (tuỳ chọn) | Thread LangGraph để AI xoá checkpoint Redis |
+| `modelId` | string (tuỳ chọn) | Mặc định `DEFAULT_AI_MODEL` |
+
+- Hợp đồng §7.10 có `document_id` là **list** ⇒ BE gửi **1 message / document** để correlation key luôn khớp
+  (`String(payload.document_id)` của consumer với array sẽ thành `"id1,id2"`).
+- AI xoá **best-effort**: id lỗi ⇒ `error_code: 640` + `failed_ids` (additive). BE **không tin** message thành công,
+  tự xác minh `user_documents.reports_refs` ([`findRemainingReportRefs()`](src/modules/write-report/report/write-content-mongo.helper.ts)).
+- Chỉ set job `finished` khi `failed_ids` rỗng; ngược lại job `error` + `errorCode: 640`.
+- Response: `job_id`, `document_ids`, `deleted_ids`, `failed_ids`, `verified_remaining_ids`, `verified`
+  (`verified: false` khi thiếu `MONGO_URI` — không đọc được Mongo để xác minh).
+- Cross-user ⇒ **404** (liệt kê id không thuộc quyền). Publish lỗi ⇒ `610`.
+
+### 2) `POST /documents/:documentId/resume-data-analysis` (T-11)
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| `analyzeLog` | string (bắt buộc) | Kết quả phân tích (từ `analyzer`) để AI viết tiếp |
+| `detailedLogs` | object[] (tuỳ chọn) | Log chi tiết bước phân tích |
+| `generatedFiles` | object (tuỳ chọn) | File/biểu đồ sinh ra ở bước phân tích |
+| `threadId` | string (tuỳ chọn) | Mặc định lấy `thread_id` của job đang treo |
+
+- Tìm job `suspended` + `resumeStep = need_data_analyze` mới nhất của tài liệu; không có ⇒ **404**.
+- Gửi lại payload gốc kèm `resume: true` + `analyze_log`, giữ `thread_id`, chuyển `resumeStep` → `writing_after_analysis`.
+- Publish lỗi ⇒ job `error` (`610`) + **400**. FE nghe tiếp qua `GET /reports/:documentId/write-stream` (SSE).
+
+### 3) Mã lỗi `chuyen_de_3`
+- `eventType` của `write-content` nhận thêm `chuyen_de_3`; mã lỗi riêng **635** (`CHUYEN_DE_3_ERROR`)
+  thay cho workaround cũ dùng chung `631`.

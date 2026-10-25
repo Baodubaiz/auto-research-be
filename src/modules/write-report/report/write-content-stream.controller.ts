@@ -11,6 +11,7 @@ import {
 import { Observable } from 'rxjs';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { ResumeDataAnalysisDto } from './dto/resume-data-analysis.dto';
 import { WriteContentRequestDto } from './dto/write-content-request.dto';
 import { WriteContentAiService } from './write-content-ai.service';
 
@@ -32,6 +33,22 @@ export class WriteContentStreamController {
       throw new BadRequestException('documentId is required');
     }
     return this.writeContentAiService.startWriteContent(userId, dto);
+  }
+
+  /**
+   * T-11: job đang treo ở `need_data_analyze` → gửi kết quả phân tích để viết tiếp.
+   */
+  @Post(':documentId/resume-data-analysis')
+  resumeAfterDataAnalysis(
+    @CurrentUser('sub') userId: string,
+    @Param('documentId') documentId: string,
+    @Body() dto: ResumeDataAnalysisDto,
+  ) {
+    return this.writeContentAiService.resumeAfterDataAnalysis(
+      userId,
+      documentId,
+      dto,
+    );
   }
 
   @Sse(':documentId/write-stream')

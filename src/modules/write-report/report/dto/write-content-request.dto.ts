@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -19,8 +20,12 @@ export class WriteContentRequestDto {
   sessionId?: string;
 
   @IsOptional()
-  @IsString()
-  eventType?: 'write_content' | 'chuyen_de_1' | 'chuyen_de_2' = 'write_content';
+  @IsIn(['write_content', 'chuyen_de_1', 'chuyen_de_2', 'chuyen_de_3'])
+  eventType?:
+    | 'write_content'
+    | 'chuyen_de_1'
+    | 'chuyen_de_2'
+    | 'chuyen_de_3' = 'write_content';
 
   @IsOptional()
   @IsString()
