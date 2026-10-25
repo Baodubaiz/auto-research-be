@@ -86,7 +86,11 @@ describe('AdminDocumentController HTTP', () => {
   );
 
   it('passes the authenticated admin and sample body to the service', async () => {
-    const body = { title: 'Sample', fileUrl: 'https://example.com/sample.pdf' };
+    const body = {
+      title: 'Sample',
+      source: 'autoresearching/sample/sample.pdf',
+      refId: 'sample-1',
+    };
     const response = await fetch(`${baseUrl}/sample`, {
       method: 'POST',
       headers: {
@@ -102,7 +106,7 @@ describe('AdminDocumentController HTTP', () => {
 
   it('passes the authenticated admin and guide body to the service', async () => {
     const body = {
-      documents_urls: ['https://example.com/guide.pdf'],
+      documents_urls: ['autoresearching/user-guide/guide.pdf'],
       data_id: 'guide-1',
     };
     const response = await fetch(`${baseUrl}/user-guide`, {
@@ -135,13 +139,20 @@ describe('AdminDocumentController HTTP', () => {
     { data_id: 'guide-1' },
     { documents_urls: null, data_id: 'guide-1' },
     { documents_urls: [], data_id: 'guide-1' },
-    { documents_urls: 'https://example.com/guide.pdf', data_id: 'guide-1' },
+    {
+      documents_urls: 'autoresearching/user-guide/guide.pdf',
+      data_id: 'guide-1',
+    },
     { documents_urls: [123], data_id: 'guide-1' },
     { documents_urls: ['not-a-url'], data_id: 'guide-1' },
     { documents_urls: ['ftp://example.com/guide.pdf'], data_id: 'guide-1' },
-    { documents_urls: ['https://example.com/guide.pdf'] },
-    { documents_urls: ['https://example.com/guide.pdf'], data_id: 123 },
-    { documents_urls: ['https://example.com/guide.pdf'], data_id: '   ' },
+    { documents_urls: ['https://example.com/guide.pdf'], data_id: 'guide-1' },
+    { documents_urls: ['autoresearching/user-guide/guide.pdf'] },
+    { documents_urls: ['autoresearching/user-guide/guide.pdf'], data_id: 123 },
+    {
+      documents_urls: ['autoresearching/user-guide/guide.pdf'],
+      data_id: '   ',
+    },
   ])(
     'rejects an invalid guide before sending it to the service: %j',
     async (body) => {
@@ -201,6 +212,61 @@ describe('AdminDocumentController HTTP', () => {
       ranking: 'Q1',
       query: 'test',
     });
+  });
+
+  it.each([
+    '1998',
+    String(new Date().getFullYear() + 1),
+    '1792639776636',
+    '2020.5',
+    'abc',
+    '',
+  ])('rejects invalid journal year %s', async (year) => {
+    const res = await fetch(baseUrl + '/journals?last_updated=' + year, {
+      headers: { Authorization: 'Bearer ' + adminToken },
+    });
+    expect(res.status).toBe(400);
+    expect(service.getJournals).not.toHaveBeenCalled();
+  });
+  it.each([1999, new Date().getFullYear()])(
+    'accepts journal year %i as an integer',
+    async (year) => {
+      const res = await fetch(baseUrl + '/journals?last_updated=' + year, {
+        headers: { Authorization: 'Bearer ' + adminToken },
+      });
+      expect(res.status).toBe(200);
+      expect(service.getJournals).toHaveBeenCalledWith('admin-1', {
+        last_updated: year,
+      });
+    },
+  );
+  it.each([
+    {
+      title: 'Sample',
+      source: 'https://example.com/sample.pdf',
+      refId: 'sample-1',
+    },
+    {
+      title: 'Sample',
+      source: 'autoresearching/sample/sample.pdf',
+      ref_id: 'sample-1',
+    },
+    {
+      title: 'Sample',
+      source: 'autoresearching/sample/sample.pdf',
+      refId: '   ',
+    },
+  ])('rejects invalid sample contract %j', async (body) => {
+    const res = await fetch(baseUrl + '/sample', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + adminToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    expect(res.status).toBe(400);
+    expect(service.uploadSampleDocument).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid sample body before calling the service', async () => {

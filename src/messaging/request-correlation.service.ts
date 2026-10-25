@@ -178,6 +178,7 @@ export class RequestCorrelationService {
     const pending = this.pendingRequests.get(key);
     if (pending) {
       clearTimeout(pending.timer);
+      this.timeoutManager?.clearTimeout(key);
       this.pendingRequests.delete(key);
       pending.reject(
         new Error(reason || `Request [${key}] was cleared or overwritten`),

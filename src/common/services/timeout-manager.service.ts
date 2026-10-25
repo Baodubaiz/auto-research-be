@@ -13,6 +13,9 @@ export const EVENT_TIMEOUT_CONFIG: Record<string, number> = {
 
   // 300s (5 minutes) - Heavy analysis & presentation
   analyzer: 300_000,
+  admin_documents: 300_000,
+  user_guide_documents: 300_000,
+  get_journals: 300_000,
   analyzer_tool: 300_000,
   gen_slides: 300_000,
   comment_data: 300_000,
