@@ -126,4 +126,31 @@ export class WriteContentMongoHelper {
       this.logger.warn(`Failed to sync Mongo collections for ${mongoDocId}: ${(err as Error).message}`);
     }
   }
+
+  /**
+   * Kiểm chứng sau `delete_report` (mục B-4): AI không trả field kết quả nào,
+   * nên BE phải tự xác minh `user_documents.reports_refs` còn record hay không.
+   * Trả về danh sách `documentId` **vẫn còn** trong Mongo (rỗng = đã xoá sạch).
+   */
+  static async findRemainingReportRefs(
+    documentIds: string[],
+  ): Promise<string[]> {
+    if (documentIds.length === 0) return [];
+
+    const client = await this.getClient();
+    const userDb = client.db('user_documents');
+    const mongoIds = documentIds.map((id) => this.toMongoDocId(id));
+
+    const found = await userDb
+      .collection('reports_refs')
+      .find({ _id: { $in: mongoIds } } as unknown as Record<string, unknown>)
+      .project({ _id: 1 })
+      .toArray();
+
+    const foundSet = new Set(
+      found.map((doc: { _id: unknown }) => String(doc._id)),
+    );
+
+    return documentIds.filter((id) => foundSet.has(this.toMongoDocId(id)));
+  }
 }
