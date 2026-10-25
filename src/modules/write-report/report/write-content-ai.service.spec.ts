@@ -45,6 +45,7 @@ describe('WriteContentAiService', () => {
       job: {
         create: jest.fn<any>().mockResolvedValue({ id: 'job-wc-1' }),
         update: jest.fn<any>().mockResolvedValue({}),
+        findFirst: jest.fn<any>(),
       },
       report: { upsert: jest.fn<any>().mockResolvedValue({}) },
     };
@@ -184,6 +185,76 @@ describe('WriteContentAiService', () => {
       expect(mockPrisma.job.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ errorCode: '632' }),
+        }),
+      );
+    });
+  });
+
+  describe('resumeAfterDataAnalysis', () => {
+    it('should resume suspended job with analyze_log and keep thread id', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: documentId });
+      mockPrisma.job.findFirst.mockResolvedValue({
+        id: 'job-suspended-1',
+        threadId: 'thread-abc',
+        payload: { event_type: 'chuyen_de_3', outline_code: ['c1'] },
+      });
+      mockPrisma.job.update.mockResolvedValue({
+        id: 'job-suspended-1',
+        status: JobStatus.processing,
+      });
+
+      const result = await service.resumeAfterDataAnalysis(userId, documentId, {
+        analyzeLog: '{"p_value":0.03}',
+      });
+
+      expect(mockPrisma.job.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            documentId,
+            status: JobStatus.suspended,
+            resumeStep: 'need_data_analyze',
+          }),
+        }),
+      );
+      expect(mockKafkaProducer.publish).toHaveBeenCalledWith(
+        'write_section_request_local',
+        expect.objectContaining({
+          resume: true,
+          analyze_log: '{"p_value":0.03}',
+          thread_id: 'thread-abc',
+          event_type: 'chuyen_de_3',
+        }),
+      );
+      expect(result.resume_step).toBe('writing_after_analysis');
+      expect(result.thread_id).toBe('thread-abc');
+    });
+
+    it('should throw NotFoundException when no suspended job exists', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: documentId });
+      mockPrisma.job.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.resumeAfterDataAnalysis(userId, documentId, { analyzeLog: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(mockKafkaProducer.publish).not.toHaveBeenCalled();
+    });
+
+    it('should map publish failure to job error 610 and BadRequest', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: documentId });
+      mockPrisma.job.findFirst.mockResolvedValue({
+        id: 'job-suspended-2',
+        threadId: 'thread-xyz',
+        payload: { event_type: 'write_content' },
+      });
+      mockPrisma.job.update.mockResolvedValue({ id: 'job-suspended-2' });
+      mockKafkaProducer.publish.mockRejectedValue(new Error('broker down'));
+
+      await expect(
+        service.resumeAfterDataAnalysis(userId, documentId, { analyzeLog: 'x' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(mockPrisma.job.update).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ errorCode: '610' }),
         }),
       );
     });
