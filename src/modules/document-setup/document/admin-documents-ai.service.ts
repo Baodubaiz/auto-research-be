@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
 import {
   getAiErrorMessage,
   getAiErrorName,
@@ -29,15 +30,12 @@ export class AdminDocumentsAiService {
   async uploadSampleDocument(userId: string, dto: AdminSampleDocumentDto) {
     const payload = {
       event_type: 'admin_documents',
-      model_id: 'localhost',
+      model_id: DEFAULT_AI_MODEL,
       user_id: userId,
       document_id: 'admin-doc',
       session_id: randomUUID(),
       language: dto.language || 'vi',
-      title: dto.title,
-      file_url: dto.fileUrl,
-      field: dto.field || 'General',
-      document_type: dto.documentType || 'research_paper',
+      documents: [{ title: dto.title, source: dto.source, ref_id: dto.refId }],
     };
 
     return this.sendAndCorrelate(payload, 618);
@@ -46,10 +44,10 @@ export class AdminDocumentsAiService {
   async uploadUserGuide(userId: string, dto: AdminUserGuideDto) {
     const payload = {
       event_type: 'user_guide_documents',
-      model_id: 'localhost',
+      model_id: DEFAULT_AI_MODEL,
       user_id: userId,
-      document_id: 'admin',
-      session_id: 'default',
+      document_id: 'admin-user-guide',
+      session_id: randomUUID(),
       language: 'vi',
       documents_urls: dto.documents_urls,
       data_id: dto.data_id,
@@ -65,14 +63,12 @@ export class AdminDocumentsAiService {
   async getJournals(userId: string, query: GetJournalsQueryDto) {
     const payload = {
       event_type: 'get_journals',
-      model_id: 'localhost',
+      model_id: DEFAULT_AI_MODEL,
       user_id: userId,
       document_id: 'admin-journals',
       session_id: randomUUID(),
       language: 'vi',
-      field: query.field,
-      ranking: query.ranking,
-      query: query.query,
+      last_updated: query.last_updated ?? new Date().getFullYear(),
     };
 
     return this.sendAndCorrelate(payload);
@@ -85,7 +81,7 @@ export class AdminDocumentsAiService {
       session_id: string;
       event_type: string;
     },
-    fallbackErrorCode = 600,
+    fallbackErrorCode = 604,
   ): Promise<Record<string, unknown>> {
     const correlationKey = this.correlationService.buildCorrelationKey({
       userId: payload.user_id,
@@ -104,7 +100,7 @@ export class AdminDocumentsAiService {
     const pendingResult = this.correlationService
       .registerPending<Record<string, unknown>>(
         correlationKey,
-        120000,
+        undefined,
         payload.event_type,
       )
       .then(

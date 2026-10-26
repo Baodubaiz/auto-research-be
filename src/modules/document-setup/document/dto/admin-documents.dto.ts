@@ -4,9 +4,14 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
+  IsInt,
+  Min,
+  Max,
   Matches,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+const minioPathPattern = /^(?![a-z][a-z0-9+.-]*:\/\/)[^/\s]+\/.+$/i;
 
 // Tài liệu mẫu gửi cho AI
 export class AdminSampleDocumentDto {
@@ -16,15 +21,13 @@ export class AdminSampleDocumentDto {
 
   @IsNotEmpty()
   @IsString()
-  fileUrl!: string;
+  @Matches(minioPathPattern, { message: 'source must be a bucket/key path' })
+  source!: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  field?: string;
-
-  @IsOptional()
-  @IsString()
-  documentType?: string;
+  @Matches(/\S/, { message: 'refId must not be blank' })
+  refId!: string;
 
   @IsOptional()
   @IsString()
@@ -35,10 +38,10 @@ export class AdminSampleDocumentDto {
 export class AdminUserGuideDto {
   @IsArray()
   @ArrayNotEmpty()
-  @IsUrl(
-    { protocols: ['http', 'https'], require_protocol: true },
-    { each: true },
-  )
+  @Matches(minioPathPattern, {
+    each: true,
+    message: 'documents_urls must contain bucket/key paths',
+  })
   documents_urls!: string[];
 
   @IsString()
@@ -65,6 +68,15 @@ export class AdminUserGuideDto {
 
 // Bộ lọc tra cứu tạp chí
 export class GetJournalsQueryDto {
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value,
+  )
+  @IsInt()
+  @Min(1999)
+  @Max(new Date().getFullYear())
+  last_updated?: number;
+
   @IsOptional()
   @IsString()
   field?: string;
