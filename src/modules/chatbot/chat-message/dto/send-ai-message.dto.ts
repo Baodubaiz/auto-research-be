@@ -19,9 +19,5 @@ export class SendAiMessageDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string;
-
-  @IsOptional()
-  @IsString()
   language?: string;
 }

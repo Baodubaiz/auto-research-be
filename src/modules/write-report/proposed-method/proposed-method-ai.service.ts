@@ -5,11 +5,12 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import {
   ProposeMethodResumeDto,
   ProposeMethodStartDto,
 } from './dto/propose-method-ai.dto';
+import { WriteContentMongoHelper } from '../report/write-content-mongo.helper';
 
 const EVENT_TYPE = 'propose_method';
 const TIMEOUT_MS = 300_000;
@@ -64,7 +65,7 @@ export class ProposedMethodAiService {
         resume_method: false,
         resume_error: false,
         db: 'redis',
-        model_id: dto.modelId || DEFAULT_AI_MODEL,
+        model_id: AI_DEFAULT_MODEL,
       },
     });
   }
@@ -86,7 +87,7 @@ export class ProposedMethodAiService {
         resume_method: true,
         resume_error: false,
         db: 'redis',
-        model_id: dto.modelId || DEFAULT_AI_MODEL,
+        model_id: AI_DEFAULT_MODEL,
       },
     });
   }
@@ -114,10 +115,11 @@ export class ProposedMethodAiService {
       },
     });
 
+    const mongoDocId = WriteContentMongoHelper.toMongoDocId(documentId);
     const kafkaPayload: Record<string, unknown> = {
       event_type: EVENT_TYPE,
       user_id: userId,
-      document_id: documentId,
+      document_id: mongoDocId,
       session_id: sessionId,
       language: 'Vietnamese',
       ...payload,
@@ -125,7 +127,7 @@ export class ProposedMethodAiService {
 
     const correlationKey = this.correlationService.buildCorrelationKey({
       userId,
-      documentId,
+      documentId: mongoDocId,
       sessionId,
       eventType: EVENT_TYPE,
     });

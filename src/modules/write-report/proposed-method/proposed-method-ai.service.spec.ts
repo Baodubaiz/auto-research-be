@@ -6,6 +6,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
 import { ProposedMethodAiService } from './proposed-method-ai.service';
+import { WriteContentMongoHelper } from '../report/write-content-mongo.helper';
 
 describe('ProposedMethodAiService', () => {
   let service: ProposedMethodAiService;
@@ -62,7 +63,9 @@ describe('ProposedMethodAiService', () => {
     >;
     expect(payload.event_type).toBe('propose_method');
     expect(payload.user_id).toBe('user-1');
-    expect(payload.document_id).toBe('doc-1');
+    expect(payload.document_id).toBe(
+      WriteContentMongoHelper.toMongoDocId('doc-1'),
+    );
     expect(payload.session_id).toBeTruthy();
     expect(payload.thread_id).toBeTruthy();
     expect(payload.auto_mode).toBe(false);

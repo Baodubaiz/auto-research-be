@@ -31,7 +31,6 @@ describe('WriteContentAiService', () => {
     papersSearch: [{ title: 'Paper 1' }],
     outline: { sections: ['Mở đầu', 'Nội dung'] },
     outlineCode: ['chapter_1'],
-    modelId: 'localhost',
     language: 'vi',
   };
 

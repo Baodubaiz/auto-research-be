@@ -3,7 +3,7 @@ import {
   sanitizeKafkaPayload,
   buildKafkaRequestEnvelope,
 } from './kafka-envelope.helper';
-import { DEFAULT_AI_MODEL } from './kafka.constants';
+import { AI_DEFAULT_MODEL } from './kafka.constants';
 
 describe('KafkaEnvelopeHelper', () => {
   describe('sanitizeKafkaPayload', () => {
@@ -67,7 +67,7 @@ describe('KafkaEnvelopeHelper', () => {
         event_type: 'generate_proposals',
         user_id: 'user-001',
         document_id: 'doc-999',
-        model_id: DEFAULT_AI_MODEL,
+        model_id: AI_DEFAULT_MODEL,
         language: 'Vietnamese',
         session_id: 'default',
       });

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import {
   getAiErrorMessage,
   getAiErrorName,
@@ -30,7 +30,7 @@ export class AdminDocumentsAiService {
   async uploadSampleDocument(userId: string, dto: AdminSampleDocumentDto) {
     const payload = {
       event_type: 'admin_documents',
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: 'admin-doc',
       session_id: randomUUID(),
@@ -44,7 +44,7 @@ export class AdminDocumentsAiService {
   async uploadUserGuide(userId: string, dto: AdminUserGuideDto) {
     const payload = {
       event_type: 'user_guide_documents',
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: 'admin-user-guide',
       session_id: randomUUID(),
@@ -63,7 +63,7 @@ export class AdminDocumentsAiService {
   async getJournals(userId: string, query: GetJournalsQueryDto) {
     const payload = {
       event_type: 'get_journals',
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: 'admin-journals',
       session_id: randomUUID(),

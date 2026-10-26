@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { KafkaProducerService } from './kafka-producer.service';
 import { RequestCorrelationService } from './request-correlation.service';
-import { DEFAULT_AI_MODEL } from '../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../common/kafka/kafka.constants';
 
 @Controller('dev/smoke-test')
 export class SmokeTestController {
@@ -43,7 +43,7 @@ export class SmokeTestController {
 
     const payload = {
       event_type: eventType,
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: documentId,
       session_id: sessionId,

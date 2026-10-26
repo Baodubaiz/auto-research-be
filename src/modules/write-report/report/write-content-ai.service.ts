@@ -16,6 +16,7 @@ import { WriteContentRequestDto } from './dto/write-content-request.dto';
 import { WriteContentHelper } from './write-content.helper';
 import { WriteContentMongoHelper } from './write-content-mongo.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class WriteContentAiService {
@@ -85,7 +86,7 @@ export class WriteContentAiService {
 
     const payload = {
       event_type: eventType,
-      model_id: dto.modelId || 'gemini-3.5-flash-lite',
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: mongoDocId,
       session_id: sessionId,

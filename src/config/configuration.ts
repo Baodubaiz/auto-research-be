@@ -3,6 +3,7 @@ import authConfig from './auth.config';
 import databaseConfig from './database.config';
 import kafkaConfig from './kafka.config';
 import redisConfig from './redis.config';
+import aiModelConfig from './ai-model.config';
 
 export default [
   appConfig,
@@ -10,4 +11,6 @@ export default [
   databaseConfig,
   kafkaConfig,
   redisConfig,
+  aiModelConfig,
 ];
+

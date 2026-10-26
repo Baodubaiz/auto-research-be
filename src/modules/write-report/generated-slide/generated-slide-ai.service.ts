@@ -9,7 +9,7 @@ import { StreamingManagerService } from '../../../common/streaming/streaming-man
 import { GenerateSlideRequestDto } from './dto/generate-slide-request.dto';
 import { GeneratedSlideHelper } from './generated-slide.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class GeneratedSlideAiService {
@@ -96,7 +96,7 @@ export class GeneratedSlideAiService {
       user_preference: numSlides,
       manual_mode: dto.manualMode ?? false,
       slide_style: dto.slideStyle || dto.userPreference?.theme || 'default',
-      model_id: dto.modelId || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       language: dto.language || 'vi',
       job_id: job.id,
       slide_id: slideRecord.id,

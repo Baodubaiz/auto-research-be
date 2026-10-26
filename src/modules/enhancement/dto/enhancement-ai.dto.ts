@@ -42,10 +42,6 @@ export class AiInDocDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string;
-
-  @IsOptional()
-  @IsString()
   language?: string;
 }
 
@@ -65,10 +61,6 @@ export class GetSuggestionsDto {
   @IsOptional()
   @IsArray()
   processedDocs?: Array<Record<string, unknown>>;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()
@@ -96,10 +88,6 @@ export class EnhanceDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string;
-
-  @IsOptional()
-  @IsString()
   language?: string;
 }
 
@@ -121,10 +109,6 @@ export class EnhanceAllDto {
   @IsOptional()
   @IsUUID()
   sessionId?: string;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { ConfigService } from '@nestjs/config';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import { TimeoutManagerService } from '../../../common/services/timeout-manager.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
@@ -54,7 +54,7 @@ describe('AdminDocumentsAiService', () => {
     ).resolves.toEqual({ success: true });
     expect(publish).toHaveBeenCalledWith('document_setup_request_local', {
       event_type: 'admin_documents',
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: 'user-1',
       document_id: 'admin-doc',
       session_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
@@ -83,7 +83,7 @@ describe('AdminDocumentsAiService', () => {
       'document_setup_request_local',
       expect.objectContaining({
         event_type: 'user_guide_documents',
-        model_id: DEFAULT_AI_MODEL,
+        model_id: AI_DEFAULT_MODEL,
         document_id: 'admin-user-guide',
         session_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
         documents_urls: guide.documents_urls,
@@ -103,7 +103,7 @@ describe('AdminDocumentsAiService', () => {
     });
     expect(publish).toHaveBeenCalledWith('document_setup_request_local', {
       event_type: 'get_journals',
-      model_id: DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: 'user-1',
       document_id: 'admin-journals',
       session_id: expect.any(String),

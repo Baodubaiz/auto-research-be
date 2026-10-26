@@ -66,7 +66,9 @@ describe('TranslateAiService', () => {
     expect(payload.target_language).toBe('English');
     expect(payload.is_outline).toBe(false);
     expect(payload.user_id).toBe('user-1');
-    expect(payload.document_id).toBe('doc-1');
+    expect(payload.document_id).toBe(
+      WriteContentMongoHelper.toMongoDocId('doc-1'),
+    );
     expect(res.translated_field).toBe('translatedContent');
     expect(res.content).toBe('Bản dịch');
   });
@@ -81,7 +83,10 @@ describe('TranslateAiService', () => {
       isOutline: true,
     } as any);
 
-    expect(spy).toHaveBeenCalledWith('doc-1', ['translatedOutline']);
+    expect(spy).toHaveBeenCalledWith(
+      WriteContentMongoHelper.toMongoDocId('doc-1'),
+      ['translatedOutline'],
+    );
     expect(res.translated_field).toBe('translatedOutline');
     expect(res.content).toEqual(['Chương 1']);
   });

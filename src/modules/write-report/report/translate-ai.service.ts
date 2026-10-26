@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import { TranslateReportDto } from './dto/translate-report.dto';
 import { WriteContentMongoHelper } from './write-content-mongo.helper';
 
@@ -39,15 +39,16 @@ export class TranslateAiService {
       throw new NotFoundException('Document not found');
     }
 
+    const mongoDocId = WriteContentMongoHelper.toMongoDocId(documentId);
     const sessionId = dto.sessionId || `sess-${EVENT_TYPE}-${randomUUID()}`;
     const isOutline = dto.isOutline ?? false;
     const field = isOutline ? 'translatedOutline' : 'translatedContent';
 
     const payload: Record<string, unknown> = {
       event_type: EVENT_TYPE,
-      model_id: dto.modelId || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
-      document_id: documentId,
+      document_id: mongoDocId,
       session_id: sessionId,
       language: 'Vietnamese',
       target_language: dto.targetLanguage,
@@ -67,7 +68,7 @@ export class TranslateAiService {
 
     const correlationKey = this.correlationService.buildCorrelationKey({
       userId,
-      documentId,
+      documentId: mongoDocId,
       sessionId,
       eventType: EVENT_TYPE,
     });
@@ -105,7 +106,7 @@ export class TranslateAiService {
 
     const response = await pendingPromise;
 
-    const content = await this.readTranslatedContent(documentId, field);
+    const content = await this.readTranslatedContent(mongoDocId, field);
 
     await this.prisma.job.update({
       where: { id: job.id },

@@ -7,7 +7,6 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateOutlineAiDto {
   @IsString()
@@ -62,9 +61,6 @@ export class GenerateOutlineAiDto {
   @IsOptional()
   finalProposal?: any;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -117,9 +113,6 @@ export class ModifyOutlineAiDto {
   @IsOptional()
   finalProposal?: any;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -154,9 +147,6 @@ export class GenerateOutlineWithRefsDto {
   @IsArray()
   processedDocs?: any[];
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -181,9 +171,6 @@ export class UpdateUserRefsDto {
   @IsArray()
   documents?: any[];
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -200,7 +187,7 @@ export interface OutlineAiDispatchOptions {
   sessionId?: string;
   eventType: string;
   errorCode: number;
-  dto: { modelId?: string; language?: string; [key: string]: any };
+  dto: { language?: string; [key: string]: any };
   kafkaData: Record<string, unknown>;
   onSuccess?: (data: Record<string, unknown>) => Promise<void>;
 }

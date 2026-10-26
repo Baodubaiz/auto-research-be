@@ -73,7 +73,10 @@ function buildPayload(
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     event_type: EVENT,
-    model_id: process.env.DEFAULT_AI_MODEL || 'localhost',
+    model_id:
+      process.env.AI_DEFAULT_MODEL ||
+      process.env.DEFAULT_AI_MODEL ||
+      'gemini-3.5-flash-lite',
     user_id: c.userId,
     document_id: 'admin',
     session_id: c.sessionId,

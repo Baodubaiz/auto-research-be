@@ -15,9 +15,6 @@ export class ProcessUploadedDocDto {
   @IsString()
   sessionId?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()
@@ -33,9 +30,6 @@ export class TriggerParseDocDto {
   @IsString()
   sessionId?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()
@@ -47,9 +41,6 @@ export class TriggerEmbedDocDto {
   @IsString()
   sessionId?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()
@@ -77,9 +68,6 @@ export class SearchUploadedDocsDto {
   @IsString()
   sessionId?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()

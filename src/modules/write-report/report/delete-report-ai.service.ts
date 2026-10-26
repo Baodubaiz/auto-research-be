@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { KafkaProducerService } from '../../../messaging/kafka-producer.service';
 import { RequestCorrelationService } from '../../../messaging/request-correlation.service';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import { DeleteReportDto } from './dto/delete-report.dto';
 import { WriteContentMongoHelper } from './write-content-mongo.helper';
 
@@ -121,7 +121,7 @@ export class DeleteReportAiService {
     const sessionId = `sess-${EVENT_TYPE}-${randomUUID()}`;
     const payload: Record<string, unknown> = {
       event_type: EVENT_TYPE,
-      model_id: dto.modelId || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: documentId,
       session_id: sessionId,

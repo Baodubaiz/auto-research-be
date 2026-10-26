@@ -26,7 +26,10 @@ async function runSmokeTest(): Promise<void> {
 
   const payload = {
     event_type: 'search_papers',
-    model_id: 'localhost',
+    model_id:
+      process.env.AI_DEFAULT_MODEL ||
+      process.env.DEFAULT_AI_MODEL ||
+      'gemini-3.5-flash-lite',
     user_id: userId,
     document_id: documentId,
     session_id: sessionId,

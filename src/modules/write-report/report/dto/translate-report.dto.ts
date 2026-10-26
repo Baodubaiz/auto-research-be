@@ -17,8 +17,4 @@ export class TranslateReportDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 }

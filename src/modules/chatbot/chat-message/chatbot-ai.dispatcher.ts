@@ -8,7 +8,7 @@ import {
   getAiErrorMessage,
   getAiErrorName,
 } from '../../../common/constants/ai-error-codes';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import { SendAiMessageDto } from './dto/send-ai-message.dto';
 
 export interface ChatbotAiDispatchOptions {
@@ -46,7 +46,7 @@ export class ChatbotAiDispatcher {
 
     const payload = {
       event_type: opt.eventType,
-      model_id: opt.dto.modelId || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: opt.userId,
       conv_id: opt.sessionId,
       session_id: opt.sessionId,

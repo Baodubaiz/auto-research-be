@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateTitleDescriptionDto {
   @IsString()
@@ -46,9 +45,6 @@ export class GenerateTitleDescriptionDto {
   @IsString({ each: true })
   keywords?: string[];
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -84,9 +80,6 @@ export class GenerateTitleDescriptionNoInfoDto {
   @IsBoolean()
   useWebSearch?: boolean = false;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -123,9 +116,6 @@ export class MixTitlesDto {
   @IsString()
   level?: string = 'bachelor';
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -172,9 +162,6 @@ export class GetResearchTypeDto {
   @IsOptional()
   proposal?: Record<string, unknown>;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()

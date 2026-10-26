@@ -34,7 +34,6 @@ describe('ReferenceService - SearchPapers & Journals', () => {
     cutOffYearHigh: 2026,
     searchRange: 'all',
     useWebSearch: false,
-    modelId: 'localhost',
     language: 'vi',
   };
 

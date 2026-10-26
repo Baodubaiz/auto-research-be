@@ -28,7 +28,6 @@ describe('GeneratedSlideAiService', () => {
     slideStyle: 'modern',
     userPreference: { numSlides: 10, theme: 'dark' },
     manualMode: false,
-    modelId: 'localhost',
     language: 'vi',
   };
 
