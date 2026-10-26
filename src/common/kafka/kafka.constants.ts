@@ -29,18 +29,16 @@ export const ALL_BASE_TOPICS = [
   ENHANCEMENT_RESPONSE_TOPIC,
 ] as const;
 
-declare const process: { env: Record<string, string | undefined> };
+import { resolveAiModelConfig } from '../../config/ai-model.config';
 
-export const DEFAULT_AI_MODEL = process.env.DEFAULT_AI_MODEL || 'gemini-3.5-flash-lite';
+export const AI_DEFAULT_MODEL = resolveAiModelConfig().defaultModel;
 
-export const SUPPORTED_KAFKA_MODELS = [
-  'gemini-3.5-flash-lite',
-  'localhost',
-  'gpt-4o',
-  'gemini-2.5-flash',
-] as const;
+/** @deprecated Sử dụng AI_DEFAULT_MODEL thay thế. */
+export const DEFAULT_AI_MODEL = AI_DEFAULT_MODEL;
 
-export type SupportedKafkaModel = (typeof SUPPORTED_KAFKA_MODELS)[number];
+export const SUPPORTED_KAFKA_MODELS = resolveAiModelConfig().allowedModels;
+
+export type SupportedKafkaModel = string;
 
 export const KAFKA_ERROR_CODES = {
   AUTHENTICATION_ERROR: 401,

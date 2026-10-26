@@ -8,7 +8,6 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class WriteContentRequestDto {
   @IsOptional()
@@ -90,9 +89,6 @@ export class WriteContentRequestDto {
   @IsBoolean()
   useWebSearch?: boolean = false;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()

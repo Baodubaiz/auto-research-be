@@ -93,9 +93,6 @@ class BaseDataAnalysisDto {
   @IsString()
   threadId?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsArray()
   @ArrayNotEmpty()

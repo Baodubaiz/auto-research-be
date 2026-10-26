@@ -45,9 +45,6 @@ export class GenerateSlideRequestDto {
   @IsString()
   slideStyle?: string;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()

@@ -8,7 +8,6 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class GenerateDomainsDto {
   @IsString()
@@ -35,9 +34,6 @@ export class GenerateDomainsDto {
   @IsBoolean()
   isTool?: boolean = false;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -77,9 +73,6 @@ export class GenerateSubdomainsDto {
   @IsBoolean()
   isTool?: boolean = false;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -115,9 +108,6 @@ export class GenerateKeywordsDto {
   @IsString({ each: true })
   subdomains?: string[];
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()
@@ -159,9 +149,6 @@ export class GenerateTitlesDto {
   @IsBoolean()
   useWebSearch?: boolean = false;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()

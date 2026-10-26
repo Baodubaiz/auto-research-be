@@ -22,7 +22,6 @@ describe('WriteContentStreamController', () => {
     papersSearch: [],
     outline: { sections: ['Mở đầu'] },
     outlineCode: 'chapter_1',
-    modelId: 'localhost',
     language: 'vi',
   };
 

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 import { CreateChatSessionDto } from './dto/create-chat-session.dto';
 import { UpdateChatSessionDto } from './dto/update-chat-session.dto';
 
@@ -10,7 +11,9 @@ export class ChatSessionService {
   async create(userId: string, dto: CreateChatSessionDto) {
     await this.ensureUser(userId);
     if (dto.documentId) await this.ensureDocument(userId, dto.documentId);
-    return this.prisma.chatSession.create({ data: { ...dto, userId } });
+    return this.prisma.chatSession.create({
+      data: { ...dto, model: AI_DEFAULT_MODEL, userId },
+    });
   }
 
   findAll(userId: string) {

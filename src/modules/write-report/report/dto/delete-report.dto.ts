@@ -22,8 +22,4 @@ export class DeleteReportDto {
   @IsArray()
   @IsString({ each: true })
   threadIds?: string[];
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 }

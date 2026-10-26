@@ -60,10 +60,6 @@ export class ProposeMethodStartDto {
   @IsOptional()
   @IsBoolean()
   inheritMode?: boolean;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 }
 
 /** Lượt tiếp: trả lời câu hỏi của AI (bắt buộc giữ nguyên `threadId`). */
@@ -88,8 +84,4 @@ export class ProposeMethodResumeDto {
   @ValidateNested()
   @Type(() => ResearchTypeDto)
   researchType?: ResearchTypeDto;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 }

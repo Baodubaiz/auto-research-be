@@ -2,7 +2,7 @@
 
 All routes require an authenticated admin. The client must not supply envelope identity fields; the backend uses the authenticated user and creates a fresh UUID session for every request.
 
-All three events use the shared `DEFAULT_AI_MODEL` constant (configured by the environment variable of the same name), defaulting to `gemini-3.5-flash-lite`.
+All three events use the shared `AI_DEFAULT_MODEL` constant (configured by the environment variable of the same name, with fallback `DEFAULT_AI_MODEL`), defaulting to `gemini-3.5-flash-lite`.
 
 | REST endpoint | Client input | Kafka event and data |
 | --- | --- | --- |

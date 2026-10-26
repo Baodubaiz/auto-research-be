@@ -5,7 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { KAFKA_CLIENT } from '../common/messaging.tokens';
 import { KafkaProducerService } from './kafka-producer.service';
-import { KAFKA_ERROR_CODES } from '../common/kafka/kafka.constants';
+import { KAFKA_ERROR_CODES, AI_DEFAULT_MODEL } from '../common/kafka/kafka.constants';
 
 describe('KafkaProducerService', () => {
   let service: KafkaProducerService;
@@ -14,7 +14,7 @@ describe('KafkaProducerService', () => {
 
   const sampleValidPayload = {
     event_type: 'search_papers',
-    model_id: 'gpt-4o',
+    model_id: AI_DEFAULT_MODEL,
     user_id: 'user-uuid-1234',
     document_id: 'doc-uuid-5678',
     session_id: 'sess-uuid-9999',
@@ -107,7 +107,7 @@ describe('KafkaProducerService', () => {
     it('should publish message successfully when payload has conv_id (chatbot)', async () => {
       const chatbotPayload = {
         event_type: 'outer_chatbot',
-        model_id: 'gemini-2.5-flash',
+        model_id: AI_DEFAULT_MODEL,
         user_id: 'user-uuid-1234',
         conv_id: 'conv-uuid-5678',
         session_id: 'sess-uuid-9999',

@@ -9,7 +9,6 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DEFAULT_AI_MODEL } from '../../../../common/kafka/kafka.constants';
 
 export class SearchPapersDto {
   @IsString()
@@ -74,9 +73,6 @@ export class SearchPapersDto {
   @IsBoolean()
   useWebSearch?: boolean;
 
-  @IsOptional()
-  @IsString()
-  modelId?: string = DEFAULT_AI_MODEL;
 
   @IsOptional()
   @IsString()

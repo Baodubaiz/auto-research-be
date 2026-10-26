@@ -16,7 +16,7 @@ import {
 } from './dto/writer-chatbot.dto';
 import { WriterInteractiveHelper } from './writer-interactive.helper';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 
 @Injectable()
 export class WriterAgentService {
@@ -119,7 +119,7 @@ export class WriterAgentService {
       conv_id: session.id,
       session_id: session.id,
       document_id: documentId,
-      model_id: dto.modelId || session.model || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       language: dto.language || session.language || 'vi',
       instruction: dto.instruction || '',
       chat_history: chatHistoryStr,

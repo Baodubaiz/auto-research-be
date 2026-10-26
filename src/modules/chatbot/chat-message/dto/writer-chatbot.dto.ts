@@ -31,10 +31,6 @@ export class WriterChatbotDto {
 
   @IsOptional()
   @IsString()
-  modelId?: string;
-
-  @IsOptional()
-  @IsString()
   language?: string;
 }
 
@@ -46,10 +42,6 @@ export class StartWriterAgentDto {
   @IsOptional()
   @IsString()
   instruction?: string;
-
-  @IsOptional()
-  @IsString()
-  modelId?: string;
 
   @IsOptional()
   @IsString()

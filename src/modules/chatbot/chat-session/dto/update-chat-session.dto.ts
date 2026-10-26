@@ -19,9 +19,5 @@ export class UpdateChatSessionDto {
   language?: string;
 
   @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
   webSearchEnabled?: boolean;
 }

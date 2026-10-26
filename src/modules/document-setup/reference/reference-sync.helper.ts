@@ -2,7 +2,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { SearchPapersDto } from './dto/search-papers.dto';
 import { PaperItemDto } from './dto/search-papers-response.dto';
 import { getAiErrorMessage } from '../../../common/constants/ai-error-codes';
-import { DEFAULT_AI_MODEL } from '../../../common/kafka/kafka.constants';
+import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
 
 export class ReferenceSyncHelper {
   static async syncFoundPapers(
@@ -106,7 +106,7 @@ export class ReferenceSyncHelper {
 
     return {
       event_type: 'search_papers',
-      model_id: dto.modelId || DEFAULT_AI_MODEL,
+      model_id: AI_DEFAULT_MODEL,
       user_id: userId,
       document_id: dto.documentId,
       session_id: sessionId,
