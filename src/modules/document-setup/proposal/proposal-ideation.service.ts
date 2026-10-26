@@ -8,6 +8,7 @@ import {
   GenerateSubdomainsDto,
   GenerateTitlesDto,
 } from './dto/generate-ideation.dto';
+import { normalizeAcademicLevel } from '../../../common/helpers/academic-level.helper';
 
 @Injectable()
 export class ProposalIdeationService {
@@ -35,9 +36,17 @@ export class ProposalIdeationService {
       onSuccess: async (data) => {
         const domains = data.domains || data.data;
         if (domains) {
+          const normalized =
+            Array.isArray(domains) && typeof domains[0] === 'string'
+              ? domains.map((d: string, idx: number) => ({
+                  id: `domain-${idx + 1}`,
+                  domainName: d,
+                  subdomains: [],
+                }))
+              : domains;
           await this.prisma.document.update({
             where: { id: dto.documentId },
-            data: { domains: domains as Prisma.InputJsonValue },
+            data: { domains: normalized as Prisma.InputJsonValue },
           });
         }
       },
@@ -62,11 +71,34 @@ export class ProposalIdeationService {
         is_tool: dto.isTool ?? false,
       },
       onSuccess: async (data) => {
-        const subdomains = data.subdomains || data.data;
-        if (subdomains) {
+        const subdomains = (data.subdomains || data.data || []) as string[];
+        if (subdomains.length > 0) {
+          let updatedDomains = doc.domains;
+          if (Array.isArray(doc.domains)) {
+            const targetDomain = this.resolveDomain(dto.domain, doc.domains);
+            updatedDomains = (doc.domains as any[]).map((d: any) => {
+              const dName = typeof d === 'string' ? d : d.domainName || d.name;
+              if (
+                dName === targetDomain ||
+                (doc.domains as any[]).length === 1
+              ) {
+                const existing = Array.isArray(d.subdomains) ? d.subdomains : [];
+                const merged = Array.from(
+                  new Set([...existing, ...subdomains]),
+                );
+                return typeof d === 'string'
+                  ? { id: `domain-${d}`, domainName: d, subdomains: merged }
+                  : { ...d, subdomains: merged };
+              }
+              return d;
+            });
+          }
           await this.prisma.document.update({
             where: { id: dto.documentId },
-            data: { subdomains: subdomains as Prisma.InputJsonValue },
+            data: {
+              subdomains: subdomains as Prisma.InputJsonValue,
+              domains: updatedDomains as Prisma.InputJsonValue,
+            },
           });
         }
       },
@@ -124,9 +156,11 @@ export class ProposalIdeationService {
       kafkaData: {
         field: dto.field || doc.field || 'General',
         domain: this.resolveDomain(dto.domain, doc.domains),
-        subdomains: dto.subdomains ?? [],
+        subdomains: this.resolveSubdomains(dto.subdomains, doc),
         keywords: dto.keywords ?? [],
-        level: dto.level || 'bachelor',
+        level: normalizeAcademicLevel(
+          dto.level || doc.documentType || undefined,
+        ),
         use_web_search: dto.useWebSearch ?? false,
       },
       onSuccess: async (data) => {
@@ -141,10 +175,38 @@ export class ProposalIdeationService {
     return doc;
   }
 
-  private resolveDomain(dtoDomain?: string, docDomains?: unknown): string {
-    if (dtoDomain) return dtoDomain;
-    if (Array.isArray(docDomains) && docDomains.length > 0) return String(docDomains[0]);
-    return typeof docDomains === 'string' && docDomains ? docDomains : 'General';
+  resolveDomain(dtoDomain?: string, docDomains?: unknown): string {
+    if (dtoDomain && dtoDomain !== '[object Object]') return dtoDomain;
+    if (Array.isArray(docDomains) && docDomains.length > 0) {
+      const first = docDomains[0];
+      if (typeof first === 'string') return first;
+      if (first && typeof first === 'object') {
+        const obj = first as Record<string, unknown>;
+        return String(obj.domainName || obj.name || obj.title || 'General');
+      }
+    }
+    return typeof docDomains === 'string' && docDomains
+      ? docDomains
+      : 'General';
+  }
+
+  resolveSubdomains(dtoSubs?: string[], doc?: any): string[] {
+    if (Array.isArray(dtoSubs) && dtoSubs.length > 0) return dtoSubs;
+    if (Array.isArray(doc?.subdomains) && doc.subdomains.length > 0) {
+      return (doc.subdomains as any[]).map((s) =>
+        typeof s === 'string' ? s : String(s.name || s),
+      );
+    }
+    if (Array.isArray(doc?.domains)) {
+      const all: string[] = [];
+      for (const d of doc.domains) {
+        if (d && Array.isArray(d.subdomains)) {
+          all.push(...d.subdomains);
+        }
+      }
+      if (all.length > 0) return all;
+    }
+    return [this.resolveDomain(undefined, doc?.domains)];
   }
 
   private async resolveProposal(dto: GenerateKeywordsDto) {

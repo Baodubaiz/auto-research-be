@@ -10,6 +10,7 @@ import {
   getAiErrorName,
 } from '../../../common/constants/ai-error-codes';
 import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
+import { normalizeAiLanguage } from '../../../common/helpers/academic-level.helper';
 
 export interface ProposalAiDispatchOptions {
   userId: string;
@@ -50,7 +51,7 @@ export class ProposalAiDispatcher {
       user_id: opt.userId,
       document_id: opt.documentId,
       session_id: sessionId,
-      language: opt.dto.language || 'vi',
+      language: normalizeAiLanguage(opt.dto.language),
       job_id: job.id,
       ...opt.kafkaData,
     };

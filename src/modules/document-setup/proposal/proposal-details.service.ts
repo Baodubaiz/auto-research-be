@@ -8,6 +8,7 @@ import {
   GetResearchTypeDto,
   MixTitlesDto,
 } from './dto/proposal-details.dto';
+import { normalizeAcademicLevel } from '../../../common/helpers/academic-level.helper';
 
 @Injectable()
 export class ProposalDetailsService {
@@ -40,17 +41,24 @@ export class ProposalDetailsService {
     const kafkaData = noInfo
       ? {
           title: dto.title,
-          level: (dto as GenerateTitleDescriptionNoInfoDto).level || 'bachelor',
+          level: normalizeAcademicLevel(
+            (dto as GenerateTitleDescriptionNoInfoDto).level,
+          ),
           use_web_search:
             (dto as GenerateTitleDescriptionNoInfoDto).useWebSearch ?? false,
         }
       : {
           title: dto.title,
           field: (dto as GenerateTitleDescriptionDto).field || doc.field,
-          domain: this.resolveDomain((dto as GenerateTitleDescriptionDto).domain, doc.domains),
+          domain: this.resolveDomain(
+            (dto as GenerateTitleDescriptionDto).domain,
+            doc.domains,
+          ),
           subdomains: (dto as GenerateTitleDescriptionDto).subdomains ?? [],
           keywords: (dto as GenerateTitleDescriptionDto).keywords ?? [],
-          level: (dto as GenerateTitleDescriptionDto).level || 'bachelor',
+          level: normalizeAcademicLevel(
+            (dto as GenerateTitleDescriptionDto).level,
+          ),
           knowledge_base:
             (dto as GenerateTitleDescriptionDto).knowledgeBase ?? [],
         };
@@ -102,7 +110,7 @@ export class ProposalDetailsService {
       kafkaData: {
         field: dto.field || doc.field || 'General',
         domain: this.resolveDomain(dto.domain, doc.domains),
-        level: dto.level || 'bachelor',
+        level: normalizeAcademicLevel(dto.level),
         proposals: proposalsPayload,
         titles: dto.titles ?? [],
       },
