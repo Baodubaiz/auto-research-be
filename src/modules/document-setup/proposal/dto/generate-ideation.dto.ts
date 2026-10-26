@@ -123,13 +123,13 @@ export class GenerateTitlesDto {
   @IsNotEmpty()
   documentId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  field!: string;
+  field?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  domain!: string;
+  domain?: string;
 
   @IsOptional()
   @IsArray()

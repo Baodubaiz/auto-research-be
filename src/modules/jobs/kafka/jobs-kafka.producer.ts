@@ -4,6 +4,7 @@ import { ClientKafka } from '@nestjs/microservices';
 import { Job } from '@prisma/client';
 import { KAFKA_CLIENT } from '../../../common/messaging.tokens';
 import { AI_DEFAULT_MODEL } from '../../../common/kafka/kafka.constants';
+import { normalizeAiLanguage } from '../../../common/helpers/academic-level.helper';
 
 @Injectable()
 export class JobsKafkaProducer implements OnModuleInit {
@@ -41,16 +42,32 @@ export class JobsKafkaProducer implements OnModuleInit {
     );
 
     const topic = moduleConfig.request;
+    const rawPayload =
+      job.payload && typeof job.payload === 'object'
+        ? (job.payload as Record<string, any>)
+        : {};
+
     const payload = {
       job_id: job.id,
       module: job.module,
       action: job.action,
-      document_id: job.documentId || undefined,
-      session_id: job.sessionId || undefined,
+      event_type: rawPayload.event_type || job.action,
+      document_id: job.documentId || rawPayload.document_id || undefined,
+      session_id:
+        job.sessionId || rawPayload.session_id || `sess-job-${job.id}`,
+      user_id: rawPayload.user_id || '00000000-0000-0000-0000-000000000001',
       resume_step: job.resumeStep || undefined,
       model_id: AI_DEFAULT_MODEL,
       localllm_base_url: isLocal ? localLlmBaseUrl : undefined,
-      payload: job.payload || {},
+      domains_num: rawPayload.domains_num || rawPayload.domainsNum || 3,
+      subdomains_num:
+        rawPayload.subdomains_num || rawPayload.subdomainsNum || 3,
+      titles_num: rawPayload.titles_num || rawPayload.titlesNum || 3,
+      keywords_num: rawPayload.keywords_num || rawPayload.keywordsNum || 5,
+      is_tool: rawPayload.is_tool ?? false,
+      language: normalizeAiLanguage(rawPayload.language),
+      ...rawPayload,
+      payload: rawPayload,
     };
 
     this.logger.log(
