@@ -24,12 +24,14 @@ export class JobService {
     private readonly configService: ConfigService,
   ) {}
 
-  async create(dto: CreateJobDto) {
+  async create(dto: CreateJobDto, userId?: string) {
     const documentId = dto.documentId || dto.document_id;
     const sessionId = dto.sessionId || dto.session_id;
+    const effectiveUserId = userId || dto.userId || dto.user_id || null;
 
     let job = await this.prisma.job.create({
       data: {
+        userId: effectiveUserId,
         module: dto.module,
         action: dto.action,
         documentId: documentId || null,
@@ -56,6 +58,8 @@ export class JobService {
     return {
       job_id: job.id,
       id: job.id,
+      userId: job.userId,
+      user_id: job.userId,
       status: job.status,
       processStatus,
       statusName: PROCESS_STATUS_NAMES[processStatus],
@@ -70,9 +74,17 @@ export class JobService {
     };
   }
 
-  async findAll(status?: JobStatus) {
+  async findAll(status?: JobStatus, userId?: string) {
+    const where: Prisma.JobWhereInput = {};
+    if (status) {
+      where.status = status;
+    }
+    if (userId) {
+      where.userId = userId;
+    }
+
     const jobs = await this.prisma.job.findMany({
-      where: status ? { status } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -81,6 +93,8 @@ export class JobService {
       return {
         job_id: j.id,
         id: j.id,
+        userId: j.userId,
+        user_id: j.userId,
         status: j.status,
         processStatus,
         statusName: PROCESS_STATUS_NAMES[processStatus],
@@ -98,14 +112,19 @@ export class JobService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string) {
     const job = await this.prisma.job.findUnique({ where: { id } });
     if (!job) throw new NotFoundException('Job not found');
+    if (userId && job.userId && job.userId !== userId) {
+      throw new NotFoundException('Job not found');
+    }
 
     const processStatus = toProcessStatus(job.status);
     return {
       job_id: job.id,
       id: job.id,
+      userId: job.userId,
+      user_id: job.userId,
       status: job.status,
       processStatus,
       statusName: PROCESS_STATUS_NAMES[processStatus],
@@ -125,13 +144,13 @@ export class JobService {
     };
   }
 
-  async update(id: string, dto: UpdateJobDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateJobDto, userId?: string) {
+    await this.findOne(id, userId);
     return this.prisma.job.update({ where: { id }, data: dto });
   }
 
-  async updateStatus(id: string, dto: UpdateJobStatusDto) {
-    await this.findOne(id);
+  async updateStatus(id: string, dto: UpdateJobStatusDto, userId?: string) {
+    await this.findOne(id, userId);
     return this.prisma.job.update({
       where: { id },
       data: {
@@ -142,8 +161,8 @@ export class JobService {
     });
   }
 
-  async resume(id: string, dto: ResumeJobDto) {
-    await this.findOne(id);
+  async resume(id: string, dto: ResumeJobDto, userId?: string) {
+    await this.findOne(id, userId);
     const updatedJob = await this.prisma.job.update({
       where: { id },
       data: {
@@ -174,8 +193,8 @@ export class JobService {
     };
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId?: string) {
+    await this.findOne(id, userId);
     await this.prisma.job.delete({ where: { id } });
     return { message: 'Job deleted successfully' };
   }

@@ -2,11 +2,13 @@ import { jest } from '@jest/globals';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../database/prisma.service';
+import { MinioStorageService } from '../../../common/services/minio-storage.service';
 import { UserUploadedDocumentService } from './user-uploaded-document.service';
 
 describe('UserUploadedDocumentService', () => {
   let service: UserUploadedDocumentService;
   let mockPrisma: Record<string, any>;
+  let mockStorageService: Record<string, any>;
 
   const userId = '00000000-0000-0000-0000-000000000001';
   const documentId = '00000000-0000-0000-0000-000000000002';
@@ -24,16 +26,73 @@ describe('UserUploadedDocumentService', () => {
       },
     };
 
+    mockStorageService = {
+      uploadPdf: jest.fn<any>(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserUploadedDocumentService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: MinioStorageService, useValue: mockStorageService },
       ],
     }).compile();
 
     service = module.get<UserUploadedDocumentService>(
       UserUploadedDocumentService,
     );
+  });
+
+  describe('uploadPdf', () => {
+    it('should upload PDF and create DB record if documentId provided', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: documentId });
+      mockStorageService.uploadPdf.mockResolvedValue({
+        bucket: 'autoresearch-documents',
+        key: 'users/1/doc.pdf',
+        url: 'http://minio/doc.pdf',
+        fileName: 'doc.pdf',
+        size: 500,
+        mimeType: 'application/pdf',
+      });
+      mockPrisma.userUploadedDocument.create.mockResolvedValue({
+        id: fileId,
+        fileName: 'doc.pdf',
+      });
+
+      const mockFile = {
+        originalname: 'doc.pdf',
+        size: 500,
+      } as Express.Multer.File;
+
+      const res = await service.uploadPdf(userId, mockFile, documentId);
+
+      expect(res.bucket).toBe('autoresearch-documents');
+      expect(res.uploadedDocumentId).toBe(fileId);
+      expect(mockStorageService.uploadPdf).toHaveBeenCalledWith(mockFile, userId);
+      expect(mockPrisma.userUploadedDocument.create).toHaveBeenCalled();
+    });
+
+    it('should upload PDF without creating DB record if documentId not provided', async () => {
+      mockStorageService.uploadPdf.mockResolvedValue({
+        bucket: 'autoresearch-documents',
+        key: 'users/1/doc.pdf',
+        url: 'http://minio/doc.pdf',
+        fileName: 'doc.pdf',
+        size: 500,
+        mimeType: 'application/pdf',
+      });
+
+      const mockFile = {
+        originalname: 'doc.pdf',
+        size: 500,
+      } as Express.Multer.File;
+
+      const res = await service.uploadPdf(userId, mockFile);
+
+      expect(res.bucket).toBe('autoresearch-documents');
+      expect(res.uploadedDocumentId).toBeNull();
+      expect(mockPrisma.userUploadedDocument.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('create', () => {

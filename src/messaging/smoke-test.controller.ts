@@ -4,13 +4,16 @@ import {
   Logger,
   NotFoundException,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { KafkaProducerService } from './kafka-producer.service';
 import { RequestCorrelationService } from './request-correlation.service';
 import { DEFAULT_AI_MODEL } from '../common/kafka/kafka.constants';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 @Controller('dev/smoke-test')
+@UseGuards(JwtAuthGuard)
 export class SmokeTestController {
   private readonly logger = new Logger(SmokeTestController.name);
 

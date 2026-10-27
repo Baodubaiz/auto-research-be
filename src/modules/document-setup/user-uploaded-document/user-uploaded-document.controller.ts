@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import 'multer';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CreateUserUploadedDocumentDto } from './dto/create-user-uploaded-document.dto';
@@ -29,6 +33,20 @@ export class UserUploadedDocumentController {
     private readonly service: UserUploadedDocumentService,
     private readonly aiService: UserUploadedDocumentAiService,
   ) {}
+
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  uploadPdf(
+    @CurrentUser('sub') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('documentId') documentId?: string,
+  ) {
+    return this.service.uploadPdf(userId, file, documentId);
+  }
 
   @Post(':id/process')
   processDocument(

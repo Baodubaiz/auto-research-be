@@ -9,7 +9,7 @@ describe('ApiKeyGuard', () => {
 
   beforeEach(() => {
     configService = {
-      get: jest.fn().mockImplementation((key: string) => {
+      get: (jest.fn() as any).mockImplementation((key: string) => {
         if (key === 'API_KEY_ID') return 'test-secret-key';
         return undefined;
       }),
@@ -48,6 +48,12 @@ describe('ApiKeyGuard', () => {
 
   it('should throw UnauthorizedException when header does not match', () => {
     const context = createMockContext('wrong-key');
+    expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context)).toThrow('Invalid x-api-key header');
+  });
+
+  it('should throw UnauthorizedException when header has same length but incorrect content', () => {
+    const context = createMockContext('test-secret-bad');
     expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
     expect(() => guard.canActivate(context)).toThrow('Invalid x-api-key header');
   });

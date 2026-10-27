@@ -29,27 +29,40 @@ export class ReferenceController {
   }
 
   @Post()
-  create(@Body() dto: CreateReferenceDto) {
-    return this.referenceService.create(dto);
+  create(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateReferenceDto,
+  ) {
+    return this.referenceService.create(dto, userId);
   }
 
   @Get()
-  findAll() {
-    return this.referenceService.findAll();
+  findAll(@CurrentUser('sub') userId: string) {
+    return this.referenceService.findAll(userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.referenceService.findOne(id);
+  findOne(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.referenceService.findOne(id, userId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateReferenceDto) {
-    return this.referenceService.update(id, dto);
+  update(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateReferenceDto,
+  ) {
+    return this.referenceService.update(id, dto, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.referenceService.remove(id);
+  remove(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.referenceService.remove(id, userId);
   }
 }

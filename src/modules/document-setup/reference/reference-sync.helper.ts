@@ -9,6 +9,7 @@ export class ReferenceSyncHelper {
     prisma: PrismaService,
     documentId: string,
     papers: PaperItemDto[],
+    userId?: string,
   ) {
     for (const p of papers) {
       if (!p.title) continue;
@@ -22,14 +23,19 @@ export class ReferenceSyncHelper {
       const openAccess = Boolean(p.openAccess ?? p.open_access);
 
       let ref = p.url
-        ? await prisma.reference.findFirst({ where: { url: p.url } })
+        ? await prisma.reference.findFirst({
+            where: { url: p.url, ...(userId ? { userId } : {}) },
+          })
         : null;
       if (!ref) {
-        ref = await prisma.reference.findFirst({ where: { title: p.title } });
+        ref = await prisma.reference.findFirst({
+          where: { title: p.title, ...(userId ? { userId } : {}) },
+        });
       }
       if (!ref) {
         ref = await prisma.reference.create({
           data: {
+            userId: userId || null,
             title: p.title,
             userLanguageTitle:
               p.userLanguageTitle || p.user_language_title || null,

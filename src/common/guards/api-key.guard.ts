@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   CanActivate,
   ExecutionContext,
@@ -27,7 +28,14 @@ export class ApiKeyGuard implements CanActivate {
       ? apiKeyHeader[0]
       : apiKeyHeader;
 
-    if (providedKey !== configuredKey) {
+    const providedHash = createHash('sha256')
+      .update(String(providedKey))
+      .digest();
+    const configuredHash = createHash('sha256')
+      .update(String(configuredKey))
+      .digest();
+
+    if (!timingSafeEqual(providedHash, configuredHash)) {
       throw new UnauthorizedException('Invalid x-api-key header');
     }
 

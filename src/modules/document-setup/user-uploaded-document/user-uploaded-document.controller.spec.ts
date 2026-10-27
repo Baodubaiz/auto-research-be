@@ -24,6 +24,7 @@ describe('UserUploadedDocumentController', () => {
 
   beforeEach(async () => {
     mockService = {
+      uploadPdf: jest.fn<any>(),
       create: jest.fn<any>(),
       findAll: jest.fn<any>(),
       findOne: jest.fn<any>(),
@@ -155,6 +156,23 @@ describe('UserUploadedDocumentController', () => {
       const res = await controller.update(userId, fileId, dto);
       expect(res.title).toBe('Updated Title');
       expect(mockService.update).toHaveBeenCalledWith(userId, fileId, dto);
+    });
+    it('should delegate uploadPdf to service', async () => {
+      const mockFile = { originalname: 'paper.pdf' } as Express.Multer.File;
+      const expected = {
+        bucket: 'test-bucket',
+        key: 'users/123/paper.pdf',
+        url: 'http://minio/test-bucket/users/123/paper.pdf',
+      };
+      mockService.uploadPdf.mockResolvedValue(expected);
+
+      const res = await controller.uploadPdf(userId, mockFile, documentId);
+      expect(res).toEqual(expected);
+      expect(mockService.uploadPdf).toHaveBeenCalledWith(
+        userId,
+        mockFile,
+        documentId,
+      );
     });
   });
 });

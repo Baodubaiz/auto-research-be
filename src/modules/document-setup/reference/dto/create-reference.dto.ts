@@ -9,6 +9,14 @@ import {
 import { ReferenceDownloadStatus } from '@prisma/client';
 
 export class CreateReferenceDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  user_id?: string;
+
   @IsString()
   title!: string;
 

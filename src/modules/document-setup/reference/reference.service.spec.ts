@@ -38,7 +38,7 @@ describe('ReferenceService', () => {
     };
 
     mockKafkaProducer = {
-      publish: jest.fn<any>().mockResolvedValue(undefined),
+      publish: (jest.fn() as any).mockResolvedValue(undefined),
     };
 
     mockCorrelationService = {
@@ -75,30 +75,45 @@ describe('ReferenceService', () => {
   });
 
   describe('CRUD Operations', () => {
-    it('should create a reference successfully', async () => {
+    it('should create a reference successfully with userId', async () => {
       const dto: CreateReferenceDto = { title: 'Test Paper', year: 2023 };
-      const created = { id: 'ref-1', ...dto };
+      const created = { id: 'ref-1', ...dto, userId };
       mockPrisma.reference.create.mockResolvedValue(created);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, userId);
       expect(result).toEqual(created);
-      expect(mockPrisma.reference.create).toHaveBeenCalledWith({ data: dto });
+      expect(mockPrisma.reference.create).toHaveBeenCalledWith({
+        data: { ...dto, userId },
+      });
     });
 
-    it('should find all references', async () => {
-      const list = [{ id: 'ref-1', title: 'Paper 1' }];
+    it('should find all references for user', async () => {
+      const list = [{ id: 'ref-1', title: 'Paper 1', userId }];
       mockPrisma.reference.findMany.mockResolvedValue(list);
 
-      const result = await service.findAll();
+      const result = await service.findAll(userId);
       expect(result).toEqual(list);
+      expect(mockPrisma.reference.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
     });
 
-    it('should find one reference by id', async () => {
-      const ref = { id: 'ref-1', title: 'Paper 1' };
+    it('should find one reference by id for user', async () => {
+      const ref = { id: 'ref-1', title: 'Paper 1', userId };
       mockPrisma.reference.findUnique.mockResolvedValue(ref);
 
-      const result = await service.findOne('ref-1');
+      const result = await service.findOne('ref-1', userId);
       expect(result).toEqual(ref);
+    });
+
+    it('should throw NotFoundException if reference belongs to another user', async () => {
+      const ref = { id: 'ref-1', title: 'Paper 1', userId: 'another-user' };
+      mockPrisma.reference.findUnique.mockResolvedValue(ref);
+
+      await expect(service.findOne('ref-1', userId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException if reference not found', async () => {
@@ -109,21 +124,21 @@ describe('ReferenceService', () => {
     });
 
     it('should update reference successfully', async () => {
-      const ref = { id: 'ref-1', title: 'Old Title' };
+      const ref = { id: 'ref-1', title: 'Old Title', userId };
       const dto: UpdateReferenceDto = { title: 'New Title' };
       mockPrisma.reference.findUnique.mockResolvedValue(ref);
-      mockPrisma.reference.update.mockResolvedValue({ id: 'ref-1', ...dto });
+      mockPrisma.reference.update.mockResolvedValue({ id: 'ref-1', ...dto, userId });
 
-      const result = await service.update('ref-1', dto);
+      const result = await service.update('ref-1', dto, userId);
       expect(result.title).toBe('New Title');
     });
 
     it('should remove reference successfully', async () => {
-      const ref = { id: 'ref-1', title: 'Paper 1' };
+      const ref = { id: 'ref-1', title: 'Paper 1', userId };
       mockPrisma.reference.findUnique.mockResolvedValue(ref);
       mockPrisma.reference.delete.mockResolvedValue(ref);
 
-      const result = await service.remove('ref-1');
+      const result = await service.remove('ref-1', userId);
       expect(result).toEqual({ message: 'Reference deleted successfully' });
     });
   });

@@ -7,9 +7,50 @@ import { PrismaService } from '../../../database/prisma.service';
 import { CreateUserUploadedDocumentDto } from './dto/create-user-uploaded-document.dto';
 import { UpdateUserUploadedDocumentDto } from './dto/update-user-uploaded-document.dto';
 
+import { MinioStorageService } from '../../../common/services/minio-storage.service';
+import 'multer';
+
 @Injectable()
 export class UserUploadedDocumentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: MinioStorageService,
+  ) {}
+
+  async uploadPdf(
+    userId: string,
+    file: Express.Multer.File,
+    documentId?: string,
+  ) {
+    if (documentId) {
+      await this.ensureOwnedDocument(userId, documentId);
+    }
+
+    const uploadResult = await this.storageService.uploadPdf(file, userId);
+
+    let docRecord: any = null;
+    if (documentId) {
+      docRecord = await this.prisma.userUploadedDocument.create({
+        data: {
+          documentId,
+          fileName: file.originalname,
+          title: file.originalname.replace(/\.pdf$/i, ''),
+          processingStatus: 'uploaded',
+        },
+      });
+    }
+
+    return {
+      bucket: uploadResult.bucket,
+      key: uploadResult.key,
+      url: uploadResult.url,
+      fileName: uploadResult.fileName,
+      size: uploadResult.size,
+      mimeType: uploadResult.mimeType,
+      uploadedDocumentId: docRecord?.id || null,
+      documentId: documentId || null,
+    };
+  }
 
   async create(userId: string, dto: CreateUserUploadedDocumentDto) {
     await this.ensureOwnedDocument(userId, dto.documentId);

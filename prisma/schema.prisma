@@ -146,6 +146,8 @@ model User {
   documents    Document[]
   chatSessions ChatSession[]
   tokenUsages  TokenUsage[]
+  jobs         Job[]
+  references   Reference[]
 
   @@map("users")
 }
@@ -228,6 +230,7 @@ model DocumentKeyword {
 
 model Reference {
   id               String                  @id @default(uuid())
+  userId           String?                 @map("user_id")
   title            String                  @db.Text
   authors          String?                 @db.Text
   journal          String?
@@ -241,8 +244,10 @@ model Reference {
   userLanguageTitle String?                @map("user_language_title") @db.Text
   createdAt        DateTime                @default(now()) @map("created_at")
 
+  user               User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
   documentReferences DocumentReference[]
 
+  @@index([userId, createdAt])
   @@map("references")
 }
 
@@ -456,6 +461,7 @@ model EnhancementSuggestion {
 
 model Job {
   id           String     @id @default(uuid())
+  userId       String?    @map("user_id")
   module       ModuleType
   action       String
   documentId   String?    @map("document_id")
@@ -471,8 +477,10 @@ model Job {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
 
-  document Document?    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
   @@map("jobs")
 }
 

@@ -5,6 +5,8 @@ import { UserUploadedDocumentService } from './user-uploaded-document.service';
 import { UserUploadedDocumentAiService } from './user-uploaded-document-ai.service';
 import { UserDocAiDispatcher } from './user-doc-ai.dispatcher';
 
+import { MinioStorageService } from '../../../common/services/minio-storage.service';
+
 @Module({
   imports: [AuthModule],
   controllers: [UserUploadedDocumentController],
@@ -12,7 +14,12 @@ import { UserDocAiDispatcher } from './user-doc-ai.dispatcher';
     UserUploadedDocumentService,
     UserUploadedDocumentAiService,
     UserDocAiDispatcher,
+    MinioStorageService,
   ],
-  exports: [UserUploadedDocumentService, UserUploadedDocumentAiService],
+  exports: [
+    UserUploadedDocumentService,
+    UserUploadedDocumentAiService,
+    MinioStorageService,
+  ],
 })
 export class UserUploadedDocumentModule {}

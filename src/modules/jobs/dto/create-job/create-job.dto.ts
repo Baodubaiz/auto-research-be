@@ -10,6 +10,14 @@ export class CreateJobDto {
 
   @IsOptional()
   @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  user_id?: string;
+
+  @IsOptional()
+  @IsString()
   documentId?: string;
 
   @IsOptional()

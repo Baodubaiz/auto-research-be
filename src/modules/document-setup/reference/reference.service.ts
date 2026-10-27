@@ -32,27 +32,40 @@ export class ReferenceService {
     private readonly configService: ConfigService,
   ) {}
 
-  create(dto: CreateReferenceDto) {
-    return this.prisma.reference.create({ data: dto });
+  create(dto: CreateReferenceDto, userId?: string) {
+    const effectiveUserId = userId || dto.userId || dto.user_id || null;
+    const { userId: _u, user_id: _uid, ...data } = dto;
+    return this.prisma.reference.create({
+      data: {
+        ...data,
+        userId: effectiveUserId,
+      },
+    });
   }
 
-  findAll() {
-    return this.prisma.reference.findMany({ orderBy: { createdAt: 'desc' } });
+  findAll(userId?: string) {
+    return this.prisma.reference.findMany({
+      where: userId ? { userId } : undefined,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string) {
     const reference = await this.prisma.reference.findUnique({ where: { id } });
     if (!reference) throw new NotFoundException('Reference not found');
+    if (userId && reference.userId && reference.userId !== userId) {
+      throw new NotFoundException('Reference not found');
+    }
     return reference;
   }
 
-  async update(id: string, dto: UpdateReferenceDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateReferenceDto, userId?: string) {
+    await this.findOne(id, userId);
     return this.prisma.reference.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId?: string) {
+    await this.findOne(id, userId);
     await this.prisma.reference.delete({ where: { id } });
     return { message: 'Reference deleted successfully' };
   }
@@ -75,6 +88,7 @@ export class ReferenceService {
 
     const job = await this.prisma.job.create({
       data: {
+        userId,
         module: ModuleType.document_setup,
         action: 'search_papers',
         documentId: dto.documentId,
@@ -147,6 +161,7 @@ export class ReferenceService {
         this.prisma,
         dto.documentId,
         papers,
+        userId,
       );
 
       await this.prisma.job.update({
